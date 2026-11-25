@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Основа — HR-платформа</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="data.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+    <!-- Navigation Sidebar -->
+    <aside id="sidebar" class="sidebar" aria-label="Навигация">
+      <div class="sidebar-header">
+        <a href="#overview" class="brand" data-nav="overview">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor" />
+              <rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity="0.45" />
+              <rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.45" />
+              <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">Основа</span>
+            <span class="brand-company">Аврора Тех</span>
+          </span>
+        </a>
+        <button id="closeSidebarBtn" class="icon-btn mobile-only" type="button" aria-label="Закрыть меню">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="overview" type="button">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1" />
+            <rect x="14" y="3" width="7" height="5" rx="1" />
+            <rect x="14" y="12" width="7" height="9" rx="1" />
+            <rect x="3" y="16" width="7" height="5" rx="1" />
+          </svg>
+          <span>Обзор</span>
+        </button>
+
+        <button class="nav-item" data-view="employees" type="button">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <!-- deslop-ignore-next-line 24 — standard UI users icon head primitive -->
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Сотрудники</span>
+          <span id="employeesNavCount" class="nav-count">0</span>
+        </button>
+
+        <button class="nav-item" data-view="onboarding" type="button">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          <span>Онбординг</span>
+          <span id="onboardingNavBadge" class="nav-count">0</span>
+        </button>
+
+        <button class="nav-item" data-view="leaves" type="button">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span>Отпуска</span>
+          <span id="pendingLeavesBadge" class="nav-count warn">0</span>
+        </button>
+
+        <button class="nav-item" data-view="structure" type="button">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="5" rx="1" />
+            <rect x="2" y="17" width="6" height="5" rx="1" />
+            <rect x="9" y="17" width="6" height="5" rx="1" />
+            <rect x="16" y="17" width="6" height="5" rx="1" />
+            <path d="M12 7v5" />
+            <path d="M5 17v-5h14v5" />
+          </svg>
+          <span>Структура</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="current-user-btn" data-open-employee="emp-12" type="button">
+          <span class="avatar avatar-sm" style="background:#E5E7EB;color:#111827;">АК</span>
+          <span class="current-user-info">
+            <span class="current-user-name">Анна Ковалёва</span>
+            <span class="current-user-role">HR-директор</span>
+          </span>
+        </button>
+        <button id="resetDemoBtn" class="btn-reset-demo" type="button">Сбросить демо-данные</button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobileMenuBtn" class="icon-btn mobile-only" type="button" aria-label="Открыть меню">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="topbar-titles">
+            <h1 id="pageTitle" class="page-title">Обзор</h1>
+            <span id="pageSubtitle" class="page-subtitle"></span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="commandTriggerBtn" class="command-trigger" type="button" title="Быстрый поиск (Ctrl+K)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- deslop-ignore-next-line 24 — standard UI search lens primitive -->
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span class="command-trigger-text">Поиск...</span>
+            <kbd class="kbd">Ctrl K</kbd>
+          </button>
+
+          <button id="primaryCtaBtn" class="btn btn-primary" type="button">
+            <span id="primaryCtaLabel">Добавить сотрудника</span>
+          </button>
+        </div>
+      </header>
+
+      <main id="mainView" class="main-content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <!-- Slide-Over Profile Drawer -->
+  <div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
+  <aside id="employeeDrawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <div class="drawer-header">
+      <h2 id="drawerTitle" class="drawer-title">Карточка сотрудника</h2>
+      <div class="drawer-header-actions">
+        <button id="drawerEditToggleBtn" class="btn btn-sm btn-secondary" type="button">Изменить</button>
+        <button id="drawerCloseBtn" class="icon-btn" type="button" aria-label="Закрыть">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="drawerContent" class="drawer-body"></div>
+  </aside>
+
+  <!-- Modal Backdrop -->
+  <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+    <!-- Command Palette -->
+    <div id="commandModal" class="modal command-modal" role="dialog" aria-modal="true" aria-label="Быстрый поиск" hidden>
+      <div class="command-input-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <!-- deslop-ignore-next-line 24 — standard UI search lens primitive -->
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input id="commandInput" type="text" placeholder="Найти сотрудника, отдел или действие..." autocomplete="off" />
+        <button class="kbd" type="button" data-close-modal>Esc</button>
+      </div>
+      <div id="commandResults" class="command-results"></div>
+    </div>
+
+    <!-- Modal: Add Employee -->
+    <div id="addEmployeeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addEmployeeTitle" hidden>
+      <div class="modal-header">
+        <h2 id="addEmployeeTitle" class="modal-title">Новый сотрудник</h2>
+        <button class="icon-btn" type="button" data-close-modal aria-label="Закрыть">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="addEmployeeForm" class="modal-form">
+        <div class="form-grid">
+          <label class="form-field full">
+            <span>ФИО *</span>
+            <input type="text" name="name" required placeholder="Дмитрий Волков" />
+          </label>
+          <label class="form-field">
+            <span>Должность *</span>
+            <input type="text" name="role" required placeholder="Product Designer" />
+          </label>
+          <label class="form-field">
+            <span>Отдел *</span>
+            <select name="departmentId" id="empDeptSelect" required></select>
+          </label>
+          <label class="form-field">
+            <span>Руководитель</span>
+            <select name="managerId" id="empManagerSelect"></select>
+          </label>
+          <label class="form-field">
+            <span>Формат</span>
+            <select name="format">
+              <option value="Гибрид">Гибрид</option>
+              <option value="Удалённо">Удалённо</option>
+              <option value="Офис">Офис</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span>Город</span>
+            <input type="text" name="city" value="Москва" />
+          </label>
+          <label class="form-field">
+            <span>Дата выхода *</span>
+            <input type="date" name="startDate" required />
+          </label>
+          <label class="form-field">
+            <span>Email *</span>
+            <input type="email" name="email" required placeholder="d.volkov@avroratech.ru" />
+          </label>
+          <label class="form-field">
+            <span>Telegram</span>
+            <input type="text" name="telegram" placeholder="@dvolkov" />
+          </label>
+          <label class="form-field full checkbox-field">
+            <input type="checkbox" name="startOnboarding" checked />
+            <span>Создать план онбординга</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Отмена</button>
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal: Request Leave -->
+    <div id="addLeaveModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addLeaveTitle" hidden>
+      <div class="modal-header">
+        <h2 id="addLeaveTitle" class="modal-title">Заявка на отсутствие</h2>
+        <button class="icon-btn" type="button" data-close-modal aria-label="Закрыть">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="addLeaveForm" class="modal-form">
+        <div class="form-grid">
+          <label class="form-field full">
+            <span>Сотрудник *</span>
+            <select name="employeeId" id="leaveEmployeeSelect" required></select>
+          </label>
+          <label class="form-field">
+            <span>Тип *</span>
+            <select name="type" required>
+              <option value="vacation">Ежегодный отпуск</option>
+              <option value="dayoff">Отгул</option>
+              <option value="sick">Больничный</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span>Статус</span>
+            <select name="status">
+              <option value="pending">На согласование</option>
+              <option value="approved">Одобрить сразу</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span>С *</span>
+            <input type="date" name="startDate" id="leaveStartInput" required />
+          </label>
+          <label class="form-field">
+            <span>По *</span>
+            <input type="date" name="endDate" id="leaveEndInput" required />
+          </label>
+          <div id="leaveDaysPreview" class="leave-preview full">Выберите даты</div>
+          <label class="form-field full">
+            <span>Комментарий</span>
+            <textarea name="comment" rows="2" placeholder="Кто подстрахует задачи на время отсутствия"></textarea>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Отмена</button>
+          <button type="submit" class="btn btn-primary">Создать заявку</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal: Launch Onboarding -->
+    <div id="addOnboardingModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addOnboardingTitle" hidden>
+      <div class="modal-header">
+        <h2 id="addOnboardingTitle" class="modal-title">Новый план онбординга</h2>
+        <button class="icon-btn" type="button" data-close-modal aria-label="Закрыть">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="addOnboardingForm" class="modal-form">
+        <div class="form-grid">
+          <label class="form-field full">
+            <span>Сотрудник *</span>
+            <select name="employeeId" id="onbEmployeeSelect" required></select>
+          </label>
+          <label class="form-field full">
+            <span>Наставник (бадди) *</span>
+            <select name="buddyId" id="onbBuddySelect" required></select>
+          </label>
+          <label class="form-field full">
+            <span>Шаблон</span>
+            <select name="template">
+              <option value="standard">Базовый (доступы, процессы, цели)</option>
+              <option value="tech">Разработка (репозитории, стенды, код-ревью)</option>
+            </select>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Отмена</button>
+          <button type="submit" class="btn btn-primary">Запустить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+</body>
+</html>
