@@ -33,7 +33,7 @@ export function EmployeeDrawer() {
     openDrawer,
   } = useHr();
 
-  const drawerRef = useRef<HTMLElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Partial<Record<DrawerTab, HTMLButtonElement | null>>>({});
   const [editErrors, setEditErrors] = useState<{ role?: string; city?: string }>({});
 
@@ -364,7 +364,7 @@ export function EmployeeDrawer() {
         aria-label="Закрыть карточку сотрудника"
         onClick={closeDrawer}
       />
-      <aside
+      <div
         ref={drawerRef}
         id="employeeDrawer"
         className={`drawer${isOpen ? ' open' : ''}`}
@@ -489,7 +489,7 @@ export function EmployeeDrawer() {
             ) : null}
           </div>
         </footer>
-      </aside>
+      </div>
     </>
   );
 }

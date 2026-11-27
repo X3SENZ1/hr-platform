@@ -69,7 +69,7 @@ export function ProgressBar({
 }) {
   const style: CSSProperties | undefined = height ? { height } : undefined;
   return (
-    <div
+    <span
       className="progress-track"
       style={style}
       role="progressbar"
@@ -78,11 +78,11 @@ export function ProgressBar({
       aria-valuenow={percent}
       aria-label={label ?? 'Прогресс'}
     >
-      <div
+      <span
         className={`progress-fill${percent === 100 ? ' done' : ''}`}
         style={{ width: `${percent}%` }}
       />
-    </div>
+    </span>
   );
 }
 

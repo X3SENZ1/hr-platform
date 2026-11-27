@@ -83,7 +83,6 @@ export function Sidebar() {
                   {count ? (
                     <span
                       className={`nav-count${count.warn ? ' warn' : ''}${count.count === 0 ? ' is-zero' : ''}`}
-                      aria-label={`${count.count}`}
                     >
                       {count.count}
                     </span>
