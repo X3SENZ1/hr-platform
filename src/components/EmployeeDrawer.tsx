@@ -362,6 +362,7 @@ export function EmployeeDrawer() {
         type="button"
         tabIndex={isOpen ? 0 : -1}
         aria-label="Закрыть карточку сотрудника"
+        inert={!isOpen}
         onClick={closeDrawer}
       />
       <div

@@ -219,7 +219,7 @@ export function AddLeaveModal() {
                 id="leave-comment"
                 name="comment"
                 rows={3}
-                maxLength={320}
+                maxLength={280}
                 placeholder="Кто подстрахует задачи на время отсутствия"
                 value={comment}
                 aria-invalid={Boolean(touched.comment && errors.comment)}

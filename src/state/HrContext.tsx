@@ -188,6 +188,8 @@ export function HrProvider({ children }: { children: ReactNode }) {
       drawerEmployeeId: employeeId,
       drawerTab: 'profile',
       drawerEditing: false,
+      activeModal: null,
+      leavePrefillEmployeeId: null,
     }));
   }, []);
 

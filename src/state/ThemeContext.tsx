@@ -51,13 +51,35 @@ export function shiftHex(hex: string, amount: number): string {
   return `#${channelToHex(r + amount)}${channelToHex(g + amount)}${channelToHex(b + amount)}`;
 }
 
-export function contrastOn(hex: string): string {
+function relativeLuminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((channel) => {
     const value = channel / 255;
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   });
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.52 ? '#111827' : '#ffffff';
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(first: string, second: string): number {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function contrastOn(hex: string): string {
+  return contrastRatio(hex, '#000000') >= contrastRatio(hex, '#ffffff')
+    ? '#000000'
+    : '#ffffff';
+}
+
+function accentTextOnLight(hex: string): string {
+  let candidate = hex;
+  for (let step = 0; step < 12; step += 1) {
+    if (contrastRatio(candidate, '#ffffff') >= 4.5) return candidate;
+    candidate = shiftHex(candidate, -16);
+  }
+  return '#111827';
 }
 
 function readPreference(): ThemePreference {
@@ -99,7 +121,9 @@ function applyTheme(theme: ThemeName, accent: string) {
   root.style.setProperty('--accent-border', `rgba(${hexToRgb(accent).join(', ')}, 0.38)`);
   root.style.setProperty(
     '--accent-text',
-    theme === 'light' ? accent : shiftHex(accent, theme === 'contrast' ? 150 : 110),
+    theme === 'light'
+      ? accentTextOnLight(accent)
+      : shiftHex(accent, theme === 'contrast' ? 150 : 110),
   );
 
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');

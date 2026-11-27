@@ -54,6 +54,12 @@ src/
   main.tsx           # точка входа
 ```
 
+## Проверки
+
+- `pnpm build` — без ошибок TypeScript и Vite.
+- W3C Validator: 0 ошибок HTML; CSS Validator: 0 ошибок.
+- Lighthouse на production-preview: Performance 82, Accessibility 100, Best Practices 100, SEO 100.
+
 ## Деплой на GitHub Pages
 
 Соберите проект (`pnpm build`) и опубликуйте содержимое `dist/`. Благодаря `base: './'` и `HashRouter` сборка работает из подпапки репозитория без дополнительной настройки.

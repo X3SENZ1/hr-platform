@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useHr } from '../state/HrContext';
+import { useBodyScrollLock, useFocusTrap } from '../lib/hooks';
 import type { ViewKey } from '../types';
 import {
   BrandMark,
@@ -26,6 +28,24 @@ const NAV_ITEMS: Array<{
 
 export function Sidebar() {
   const { data, ui, patchUi, openDrawer, resetDemo, getOnboardingProgress, getEmployee } = useHr();
+  const sidebarRef = useRef<HTMLElement>(null);
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 1024px)').matches,
+  );
+  const mobileMenuOpen = ui.sidebarOpen && !isDesktop;
+  useFocusTrap(mobileMenuOpen, sidebarRef);
+  useBodyScrollLock(mobileMenuOpen);
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const syncLayout = () => {
+      setIsDesktop(desktop.matches);
+      if (desktop.matches) patchUi({ sidebarOpen: false });
+    };
+    syncLayout();
+    desktop.addEventListener('change', syncLayout);
+    return () => desktop.removeEventListener('change', syncLayout);
+  }, [patchUi]);
 
   const activeOnboarding = data.onboarding.filter(
     (track) => getOnboardingProgress(track).percent < 100,
@@ -42,9 +62,11 @@ export function Sidebar() {
 
   return (
     <aside
+      ref={sidebarRef}
       id="sidebar"
       className={`sidebar${ui.sidebarOpen ? ' open' : ''}`}
       aria-label="Боковая навигация"
+      inert={!isDesktop && !ui.sidebarOpen}
     >
       <header className="sidebar-header">
         <NavLink to="/overview" className="brand" onClick={() => patchUi({ sidebarOpen: false })}>

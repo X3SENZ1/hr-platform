@@ -9,6 +9,8 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
+const focusTrapStack: symbol[] = [];
+
 export function useFocusTrap<T extends HTMLElement>(
   active: boolean,
   ref: RefObject<T | null>,
@@ -18,6 +20,10 @@ export function useFocusTrap<T extends HTMLElement>(
     const node = ref.current;
     if (!node) return undefined;
 
+    const token = Symbol('focus-trap');
+    focusTrapStack.push(token);
+    const isTopmost = () => focusTrapStack[focusTrapStack.length - 1] === token;
+
     const previous = document.activeElement as HTMLElement | null;
     const getFocusable = () =>
       Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
@@ -25,12 +31,13 @@ export function useFocusTrap<T extends HTMLElement>(
       );
 
     const timer = window.setTimeout(() => {
+      if (!isTopmost()) return;
       const list = getFocusable();
       (list[0] ?? node).focus();
     }, 40);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || !isTopmost()) return;
       const list = getFocusable();
       if (list.length === 0) {
         event.preventDefault();
@@ -52,7 +59,18 @@ export function useFocusTrap<T extends HTMLElement>(
     return () => {
       window.clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
-      previous?.focus?.();
+      const index = focusTrapStack.lastIndexOf(token);
+      const wasTopmost = index === focusTrapStack.length - 1;
+      if (index >= 0) focusTrapStack.splice(index, 1);
+      if (wasTopmost) {
+        const canRestore =
+          previous &&
+          previous !== document.body &&
+          previous.isConnected &&
+          !previous.closest('[inert]');
+        if (canRestore) previous.focus();
+        else document.getElementById('main-content')?.focus();
+      }
     };
   }, [active, ref]);
 }

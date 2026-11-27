@@ -37,38 +37,56 @@
           var r = parseInt(accent.slice(1, 3), 16);
           var g = parseInt(accent.slice(3, 5), 16);
           var b = parseInt(accent.slice(5, 7), 16);
-          var channels = [r, g, b].map(function (channel) {
-            var value = channel / 255;
-            return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
-          });
-          var luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+          function luminance(red, green, blue) {
+            var channels = [red, green, blue].map(function (channel) {
+              var value = channel / 255;
+              return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+          }
+          function hex(red, green, blue) {
+            return (
+              '#' +
+              [red, green, blue]
+                .map(function (channel) {
+                  return Math.max(0, Math.min(255, Math.round(channel)))
+                    .toString(16)
+                    .padStart(2, '0');
+                })
+                .join('')
+            );
+          }
+          var lum = luminance(r, g, b);
+          var whiteContrast = 1.05 / (lum + 0.05);
+          var blackContrast = (lum + 0.05) / 0.05;
+          var accentContrast = blackContrast >= whiteContrast ? '#000000' : '#ffffff';
           var delta = theme === 'dark' ? 24 : -24;
-          var hover =
-            '#' +
-            [r, g, b]
-              .map(function (channel) {
-                return Math.max(0, Math.min(255, Math.round(channel + delta)))
-                  .toString(16)
-                  .padStart(2, '0');
-              })
-              .join('');
-          var textDelta = theme === 'light' ? 0 : theme === 'contrast' ? 150 : 110;
-          var accentText =
-            '#' +
-            [r, g, b]
-              .map(function (channel) {
-                return Math.max(0, Math.min(255, Math.round(channel + textDelta)))
-                  .toString(16)
-                  .padStart(2, '0');
-              })
-              .join('');
+          var hover = hex(r + delta, g + delta, b + delta);
+          var textR = r;
+          var textG = g;
+          var textB = b;
+          if (theme === 'light') {
+            for (var step = 0; step < 12; step += 1) {
+              var textLuminance = luminance(textR, textG, textB);
+              if (1.05 / (textLuminance + 0.05) >= 4.5) break;
+              textR -= 16;
+              textG -= 16;
+              textB -= 16;
+            }
+          } else {
+            var textDelta = theme === 'contrast' ? 150 : 110;
+            textR += textDelta;
+            textG += textDelta;
+            textB += textDelta;
+          }
+          var accentText = hex(textR, textG, textB);
           var root = document.documentElement;
           root.dataset.theme = theme;
           root.style.colorScheme = theme === 'light' ? 'light' : 'dark';
           root.style.setProperty('--accent', accent);
           root.style.setProperty('--accent-rgb', r + ', ' + g + ', ' + b);
           root.style.setProperty('--accent-hover', hover);
-          root.style.setProperty('--accent-contrast', luminance > 0.52 ? '#111827' : '#ffffff');
+          root.style.setProperty('--accent-contrast', accentContrast);
           root.style.setProperty('--accent-soft', 'rgba(' + r + ', ' + g + ', ' + b + ', 0.12)');
           root.style.setProperty(
             '--accent-border',
