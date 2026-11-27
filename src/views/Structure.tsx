@@ -1,6 +1,8 @@
 import { useHr } from '../state/HrContext';
+import { formatDateFull } from '../lib/date';
 import type { Employee } from '../types';
-import { Avatar } from '../components/ui';
+import { Avatar, EmptyState } from '../components/ui';
+import { RadioGroup, SearchField } from '../components/Filters';
 
 export function Structure() {
   const {
@@ -23,39 +25,40 @@ export function Structure() {
       : ' org-dim';
   };
 
+  const matches = data.employees.filter((employee) =>
+    `${employee.name} ${employee.role}`.toLowerCase().includes(query),
+  );
+
   const toolbar = (
-    <div className="toolbar">
-      <input
+    <section className="structure-toolbar" aria-labelledby="structure-toolbar-title">
+      <h2 id="structure-toolbar-title" className="visually-hidden">
+        Настройки оргсхемы
+      </h2>
+      <SearchField
         id="structureSearchInput"
-        type="search"
-        className="input"
-        style={{ width: 240 }}
-        placeholder="Найти на оргсхеме..."
+        label="Поиск по оргсхеме"
+        placeholder="Найти сотрудника или роль…"
         value={ui.structureSearch}
-        onChange={(event) => patchUi({ structureSearch: event.target.value })}
+        onChange={(value) => patchUi({ structureSearch: value })}
       />
-      <div className="segmented">
-        <button
-          className={`segmented-btn${ui.structureMode === 'tree' ? ' active' : ''}`}
-          type="button"
-          onClick={() => patchUi({ structureMode: 'tree' })}
-        >
-          Оргсхема
-        </button>
-        <button
-          className={`segmented-btn${ui.structureMode === 'cards' ? ' active' : ''}`}
-          type="button"
-          onClick={() => patchUi({ structureMode: 'cards' })}
-        >
-          Отделы
-        </button>
-      </div>
-    </div>
+      <RadioGroup
+        legend="Вид структуры"
+        options={[
+          { value: 'tree', label: 'Оргсхема' },
+          { value: 'cards', label: 'Отделы' },
+        ]}
+        value={ui.structureMode}
+        onChange={(value) => patchUi({ structureMode: value })}
+      />
+      <p className="filter-summary" aria-live="polite">
+        {query ? `Совпадений: ${matches.length}` : `Сотрудников: ${data.employees.length}`}
+      </p>
+    </section>
   );
 
   if (ui.structureMode === 'cards') {
     return (
-      <>
+      <div className="stack">
         {toolbar}
         <div className="dept-cards-grid">
           {data.departments.map((department) => {
@@ -64,106 +67,77 @@ export function Structure() {
             );
             const lead = getEmployee(department.leadId);
             return (
-              <section className="card" key={department.id}>
-                <div className="card-body">
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: 6,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontWeight: 600,
-                        fontSize: 14.5,
-                      }}
+              <article className="card dept-card" key={department.id}>
+                <header className="dept-card-header">
+                  <span className="entity-id">{department.code}</span>
+                  <h2 className="entity-title">{department.name}</h2>
+                  <span className="section-chip">{members.length} чел.</span>
+                </header>
+                <p className="entity-description">{department.description}</p>
+                <div className="dept-goals">
+                  <h3 className="meta-label">Цели отдела</h3>
+                  <ul className="goal-list">
+                    {department.goals.map((goal) => (
+                      <li key={goal}>{goal}</li>
+                    ))}
+                  </ul>
+                </div>
+                {lead ? (
+                  <div className="dept-lead">
+                    <h3 className="meta-label">Руководитель</h3>
+                    <button
+                      className={`org-lead-btn${matchClass(lead)}`}
+                      type="button"
+                      onClick={() => openDrawer(lead.id)}
                     >
-                      <span className="dept-dot" style={{ background: department.color }} />
-                      {department.name}
-                    </div>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {members.length} чел.
-                    </span>
+                      <Avatar employee={lead} size="sm" />
+                      <span className="person-meta">
+                        <span className="person-name">{lead.name}</span>
+                        <span className="person-sub">{lead.role}</span>
+                      </span>
+                    </button>
                   </div>
-                  <p
-                    style={{
-                      margin: '0 0 12px',
-                      color: 'var(--text-secondary)',
-                      fontSize: 12.5,
-                    }}
-                  >
-                    {department.description}
-                  </p>
-                  {lead && (
-                    <div style={{ marginBottom: 10 }}>
-                      <button
-                        className={`org-lead-btn${matchClass(lead)}`}
-                        type="button"
-                        onClick={() => openDrawer(lead.id)}
-                      >
-                        <Avatar employee={lead} size="sm" />
-                        <div className="person-meta">
-                          <div className="person-name">{lead.name}</div>
-                          <div className="person-sub">{lead.role}</div>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                      marginBottom: 12,
-                    }}
-                  >
+                ) : null}
+                <div className="dept-members">
+                  <h3 className="meta-label">Команда</h3>
+                  <ul className="member-list">
                     {members
                       .filter((member) => !lead || member.id !== lead.id)
                       .map((member) => (
-                        <button
-                          className={`org-member-btn${matchClass(member)}`}
-                          key={member.id}
-                          type="button"
-                          onClick={() => openDrawer(member.id)}
-                        >
-                          <Avatar employee={member} size="sm" />
-                          <div className="person-meta">
-                            <div className="person-name">{member.name}</div>
-                            <div className="person-sub">{member.role}</div>
-                          </div>
-                        </button>
+                        <li key={member.id}>
+                          <button
+                            className={`org-member-btn${matchClass(member)}`}
+                            type="button"
+                            onClick={() => openDrawer(member.id)}
+                          >
+                            <Avatar employee={member} size="sm" />
+                            <span className="person-meta">
+                              <span className="person-name">{member.name}</span>
+                              <span className="person-sub">{member.role}</span>
+                            </span>
+                          </button>
+                        </li>
                       ))}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      paddingTop: 10,
-                      borderTop: '1px solid var(--border)',
-                      fontSize: 12,
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    <span>Вакансий: {department.openRoles || 0}</span>
-                    <button
-                      className="link-btn"
-                      type="button"
-                      onClick={() => openDepartment(department.id)}
-                    >
-                      Открыть в базе →
-                    </button>
-                  </div>
+                  </ul>
                 </div>
-              </section>
+                <footer className="dept-card-footer">
+                  <span>Вакансий: {department.openRoles || 0}</span>
+                  <span>
+                    Создан <time dateTime={department.createdAt}>{formatDateFull(department.createdAt)}</time>
+                  </span>
+                  <button
+                    className="link-btn"
+                    type="button"
+                    onClick={() => openDepartment(department.id)}
+                  >
+                    Открыть в базе →
+                  </button>
+                </footer>
+              </article>
             );
           })}
         </div>
-      </>
+      </div>
     );
   }
 
@@ -175,141 +149,133 @@ export function Structure() {
   const branchDepartments = data.departments.filter((department) => department.id !== 'exec');
 
   return (
-    <>
+    <div className="stack">
       {toolbar}
-      <div className="org-tree-scroll">
-        <div className="org-tree">
-          {ceo && (
-            <>
-              <div
-                className={`org-ceo-node${matchClass(ceo)}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => openDrawer(ceo.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    openDrawer(ceo.id);
-                  }
-                }}
-              >
-                <Avatar employee={ceo} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{ceo.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ceo.role}</div>
-                </div>
-              </div>
-              {execOthers.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    marginTop: 8,
-                  }}
-                >
-                  {execOthers.map((member) => (
-                    <button
-                      className={`btn btn-sm btn-secondary${matchClass(member)}`}
-                      key={member.id}
-                      type="button"
-                      onClick={() => openDrawer(member.id)}
-                    >
-                      {member.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-          <div className="org-stem-down" />
-          <div
-            className="org-branches"
-            style={{ gridTemplateColumns: `repeat(${branchDepartments.length}, minmax(215px, 1fr))` }}
-          >
-            {branchDepartments.map((department) => {
-              const members = data.employees.filter(
-                (employee) => employee.departmentId === department.id,
-              );
-              const lead = getEmployee(department.leadId);
-              const others = members.filter((member) => !lead || member.id !== lead.id);
-              return (
-                <div className="org-branch-col" key={department.id}>
-                  <div className="org-dept-box">
-                    <div className="org-dept-head">
-                      <div className="org-dept-title-row">
-                        <div className="org-dept-name">
-                          <span
-                            className="dept-dot"
-                            style={{ background: department.color }}
-                          />
-                          {department.name}
-                        </div>
-                        <span
-                          className="tabular"
-                          style={{ fontSize: 12, color: 'var(--text-muted)' }}
-                        >
-                          {members.length}
-                          {department.openRoles ? ` · +${department.openRoles} вак.` : ''}
-                        </span>
-                      </div>
-                      {lead && (
-                        <button
-                          className={`org-lead-btn${matchClass(lead)}`}
-                          type="button"
-                          onClick={() => openDrawer(lead.id)}
-                        >
-                          <Avatar employee={lead} size="sm" />
-                          <div className="person-meta">
-                            <div className="person-name">{lead.name}</div>
-                            <div className="person-sub">{lead.role}</div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
-                    <div className="org-members-list">
-                      {others.length ? (
-                        others.map((member) => {
-                          const status = getEmployeeStatusMeta(member);
-                          return (
-                            <button
-                              className={`org-member-btn${matchClass(member)}`}
-                              key={member.id}
-                              type="button"
-                              onClick={() => openDrawer(member.id)}
-                            >
-                              <Avatar employee={member} size="sm" />
-                              <div className="person-meta">
-                                <div className="person-name">{member.name}</div>
-                                <div className="person-sub">
-                                  {member.role}
-                                  {status.key === 'probation' ? ' · исп.' : ''}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div
-                          style={{
-                            padding: 10,
-                            fontSize: 12,
-                            color: 'var(--text-muted)',
-                            textAlign: 'center',
-                          }}
-                        >
-                          Нет участников
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {query && matches.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            title="Никого не нашли"
+            text="Попробуйте изменить запрос — поиск работает по имени и роли."
+          />
         </div>
-      </div>
-    </>
+      ) : (
+        <figure className="org-figure">
+          <figcaption className="visually-hidden">
+            Организационная схема компании «Аврора Тех»
+          </figcaption>
+          <div className="org-tree-scroll">
+            <div className="org-tree">
+              {ceo ? (
+                <>
+                  <button
+                    className={`org-ceo-node${matchClass(ceo)}`}
+                    type="button"
+                    onClick={() => openDrawer(ceo.id)}
+                  >
+                    <Avatar employee={ceo} />
+                    <span className="person-meta">
+                      <span className="person-name">{ceo.name}</span>
+                      <span className="person-sub">{ceo.role}</span>
+                    </span>
+                  </button>
+                  {execOthers.length > 0 ? (
+                    <ul className="exec-list">
+                      {execOthers.map((member) => (
+                        <li key={member.id}>
+                          <button
+                            className={`btn btn-sm btn-secondary${matchClass(member)}`}
+                            type="button"
+                            onClick={() => openDrawer(member.id)}
+                          >
+                            {member.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </>
+              ) : null}
+              <span className="org-stem-down" aria-hidden="true" />
+              <div
+                className="org-branches"
+                style={{ gridTemplateColumns: `repeat(${branchDepartments.length}, minmax(215px, 1fr))` }}
+              >
+                {branchDepartments.map((department) => {
+                  const members = data.employees.filter(
+                    (employee) => employee.departmentId === department.id,
+                  );
+                  const lead = getEmployee(department.leadId);
+                  const others = members.filter((member) => !lead || member.id !== lead.id);
+                  return (
+                    <article className="org-branch-col" key={department.id}>
+                      <div className="org-dept-box">
+                        <header className="org-dept-head">
+                          <div className="org-dept-title-row">
+                            <h2 className="org-dept-name">
+                              <span
+                                className="dept-dot"
+                                style={{ background: department.color }}
+                                aria-hidden="true"
+                              />
+                              {department.name}
+                            </h2>
+                            <span className="tabular org-dept-count">
+                              {members.length}
+                              {department.openRoles ? ` · +${department.openRoles} вак.` : ''}
+                            </span>
+                          </div>
+                          {lead ? (
+                            <button
+                              className={`org-lead-btn${matchClass(lead)}`}
+                              type="button"
+                              onClick={() => openDrawer(lead.id)}
+                            >
+                              <Avatar employee={lead} size="sm" />
+                              <span className="person-meta">
+                                <span className="person-name">{lead.name}</span>
+                                <span className="person-sub">{lead.role}</span>
+                              </span>
+                            </button>
+                          ) : null}
+                        </header>
+                        <div className="org-members-list">
+                          {others.length ? (
+                            <ul className="member-list">
+                              {others.map((member) => {
+                                const status = getEmployeeStatusMeta(member);
+                                return (
+                                  <li key={member.id}>
+                                    <button
+                                      className={`org-member-btn${matchClass(member)}`}
+                                      type="button"
+                                      onClick={() => openDrawer(member.id)}
+                                    >
+                                      <Avatar employee={member} size="sm" />
+                                      <span className="person-meta">
+                                        <span className="person-name">{member.name}</span>
+                                        <span className="person-sub">
+                                          {member.role}
+                                          {status.key === 'probation' ? ' · исп.' : ''}
+                                        </span>
+                                      </span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="muted-text org-empty">Нет участников</p>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </figure>
+      )}
+    </div>
   );
 }

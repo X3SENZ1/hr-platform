@@ -1,34 +1,46 @@
-import type { AppData, Department, Employee, Leave, OnboardingTask, OnboardingTrack } from '../types';
+import type {
+  AppData,
+  Department,
+  Employee,
+  Leave,
+  LeaveApproval,
+  LeaveHandover,
+  LeavePriority,
+  OnboardingTask,
+  OnboardingTrack,
+} from '../types';
 import { offsetISO, offsetMonthDay } from '../lib/date';
+import { AVATAR_PALETTES } from '../lib/meta';
 
 export interface OnboardingTemplateItem {
   stage: string;
   title: string;
   owner: string;
+  priority: LeavePriority;
 }
 
 export const ONBOARDING_TEMPLATES: Record<'standard' | 'tech', OnboardingTemplateItem[]> = {
   standard: [
-    { stage: 'День 1', title: 'Выдать почту, корпоративный мессенджер и доступы в Notion', owner: 'HR' },
-    { stage: 'День 1', title: 'Провести вводный звонок с бадди и рассказать о процессах', owner: 'Бадди' },
-    { stage: 'День 1', title: 'Подписать кадровые документы и заполнить профиль', owner: 'HR' },
-    { stage: 'Первая неделя', title: 'Вводная встреча по продукту и ключевым метрикам', owner: 'Тимлид' },
-    { stage: 'Первая неделя', title: 'Провести знакомства со смежными командами', owner: 'Новичок' },
-    { stage: 'Первая неделя', title: 'Закрыть первую рабочую задачу при поддержке бадди', owner: 'Новичок' },
-    { stage: 'Первый месяц', title: 'Зафиксировать цели на испытательный срок (3 мес.)', owner: 'Тимлид' },
-    { stage: 'Первый месяц', title: 'Промежуточный 1-on-1 чек-ин после двух недель', owner: 'HR' },
-    { stage: 'Первый месяц', title: 'Итоги первого месяца и обратная связь', owner: 'Тимлид' },
+    { stage: 'День 1', title: 'Выдать почту, корпоративный мессенджер и доступы в Notion', owner: 'HR', priority: 'high' },
+    { stage: 'День 1', title: 'Провести вводный звонок с бадди и рассказать о процессах', owner: 'Бадди', priority: 'high' },
+    { stage: 'День 1', title: 'Подписать кадровые документы и заполнить профиль', owner: 'HR', priority: 'normal' },
+    { stage: 'Первая неделя', title: 'Вводная встреча по продукту и ключевым метрикам', owner: 'Тимлид', priority: 'normal' },
+    { stage: 'Первая неделя', title: 'Провести знакомства со смежными командами', owner: 'Новичок', priority: 'normal' },
+    { stage: 'Первая неделя', title: 'Закрыть первую рабочую задачу при поддержке бадди', owner: 'Новичок', priority: 'high' },
+    { stage: 'Первый месяц', title: 'Зафиксировать цели на испытательный срок (3 мес.)', owner: 'Тимлид', priority: 'high' },
+    { stage: 'Первый месяц', title: 'Промежуточный 1-on-1 чек-ин после двух недель', owner: 'HR', priority: 'normal' },
+    { stage: 'Первый месяц', title: 'Итоги первого месяца и обратная связь', owner: 'Тимлид', priority: 'low' },
   ],
   tech: [
-    { stage: 'День 1', title: 'Выдать доступы в GitHub, трекер задач, VPN и стенды', owner: 'Тимлид' },
-    { stage: 'День 1', title: 'Выдать технику и оформить кадровые документы', owner: 'HR' },
-    { stage: 'День 1', title: 'Настроить локальное окружение и запустить проект', owner: 'Бадди' },
-    { stage: 'Первая неделя', title: 'Разобрать архитектуру сервисов и правила код-ревью', owner: 'Бадди' },
-    { stage: 'Первая неделя', title: 'Выкатить первую небольшую задачу на staging', owner: 'Новичок' },
-    { stage: 'Первая неделя', title: 'Поучаствовать в планировании и демо спринта', owner: 'Новичок' },
-    { stage: 'Первый месяц', title: 'Провести первое самостоятельное код-ревью', owner: 'Новичок' },
-    { stage: 'Первый месяц', title: 'Согласовать цели на испытательный срок', owner: 'Тимлид' },
-    { stage: 'Первый месяц', title: 'Чек-ин первого месяца с HR и руководителем', owner: 'HR' },
+    { stage: 'День 1', title: 'Выдать доступы в GitHub, трекер задач, VPN и стенды', owner: 'Тимлид', priority: 'high' },
+    { stage: 'День 1', title: 'Выдать технику и оформить кадровые документы', owner: 'HR', priority: 'high' },
+    { stage: 'День 1', title: 'Настроить локальное окружение и запустить проект', owner: 'Бадди', priority: 'normal' },
+    { stage: 'Первая неделя', title: 'Разобрать архитектуру сервисов и правила код-ревью', owner: 'Бадди', priority: 'normal' },
+    { stage: 'Первая неделя', title: 'Выкатить первую небольшую задачу на staging', owner: 'Новичок', priority: 'high' },
+    { stage: 'Первая неделя', title: 'Поучаствовать в планировании и демо спринта', owner: 'Новичок', priority: 'normal' },
+    { stage: 'Первый месяц', title: 'Провести первое самостоятельное код-ревью', owner: 'Новичок', priority: 'normal' },
+    { stage: 'Первый месяц', title: 'Согласовать цели на испытательный срок', owner: 'Тимлид', priority: 'high' },
+    { stage: 'Первый месяц', title: 'Чек-ин первого месяца с HR и руководителем', owner: 'HR', priority: 'low' },
   ],
 };
 
@@ -39,6 +51,7 @@ export function buildOnboardingTasks(template: keyof typeof ONBOARDING_TEMPLATES
     stage: item.stage,
     title: item.title,
     owner: item.owner,
+    priority: item.priority,
     done: false,
   }));
 }
@@ -47,49 +60,113 @@ function buildDepartments(): Department[] {
   return [
     {
       id: 'exec',
+      code: 'DEP-01',
       name: 'Руководство',
       color: '#374151',
       leadId: 'emp-1',
       openRoles: 0,
       description: 'Стратегия компании, партнёрства и ключевые решения',
+      createdAt: '2021-03-01',
+      goals: ['Рост выручки на 35%', 'Выход на два новых рынка', 'NPS клиентов выше 60'],
     },
     {
       id: 'eng',
+      code: 'DEP-02',
       name: 'Разработка',
       color: '#2563EB',
       leadId: 'emp-2',
       openRoles: 2,
       description: 'Frontend, Backend, DevOps и тестирование',
+      createdAt: '2021-05-15',
+      goals: ['Сократить time-to-market до 6 недель', 'Покрытие критичных сценариев тестами 80%', 'Перейти на Kubernetes'],
     },
     {
       id: 'product',
+      code: 'DEP-03',
       name: 'Продукт и дизайн',
       color: '#7C3AED',
       leadId: 'emp-6',
       openRoles: 1,
       description: 'Продуктовый менеджмент, UX/UI и аналитика',
+      createdAt: '2022-01-10',
+      goals: ['Увеличить activation rate на 12%', 'Обновить дизайн-систему', 'Запустить исследование пользователей'],
     },
     {
       id: 'marketing',
+      code: 'DEP-04',
       name: 'Маркетинг',
       color: '#059669',
       leadId: 'emp-9',
       openRoles: 1,
       description: 'Привлечение, контент и бренд работодателя',
+      createdAt: '2022-04-20',
+      goals: ['Снизить CPL на 18%', 'Выпустить 12 кейсов', 'Увеличить органический трафик на 40%'],
     },
     {
       id: 'people',
+      code: 'DEP-05',
       name: 'HR и операции',
       color: '#D97706',
       leadId: 'emp-12',
       openRoles: 0,
       description: 'Рекрутинг, онбординг, КДП и операционная поддержка',
+      createdAt: '2023-02-06',
+      goals: ['Сократить найм до 21 дня', 'Провести eNPS-исследование', 'Автоматизировать кадровый документооборот'],
     },
   ];
 }
 
+const SKILLS_BY_DEPARTMENT: Record<string, string[]> = {
+  exec: ['Стратегия', 'Управление изменениями', 'Финансовое планирование', 'Переговоры'],
+  eng: ['TypeScript', 'React', 'Go', 'PostgreSQL', 'Docker', 'Kubernetes', 'Playwright', 'CI/CD'],
+  product: ['Product Discovery', 'Figma', 'Аналитика', 'SQL', 'Amplitude', 'Дизайн-системы'],
+  marketing: ['Performance', 'SEO', 'Контент', 'Бренд', 'Аналитика кампаний', 'CRM'],
+  people: ['Рекрутинг', 'Онбординг', 'People Ops', 'HR-аналитика', 'Кадровое делопроизводство'],
+};
+
+const TAGS_BY_DEPARTMENT: Record<string, string[]> = {
+  exec: ['Management', 'Strategy'],
+  eng: ['Frontend', 'Backend', 'DevOps', 'QA'],
+  product: ['Product', 'Design', 'Analytics'],
+  marketing: ['Marketing', 'Content', 'Brand'],
+  people: ['HR', 'People Ops', 'Recruiting'],
+};
+
+const EMERGENCY_NAMES = ['Мария', 'Сергей', 'Елена', 'Андрей', 'Ольга', 'Дмитрий'];
+const LAPTOPS = ['MacBook Pro 14"', 'MacBook Air 13"', 'ThinkPad X1 Carbon', 'Dell XPS 13'];
+const MONITORS = ['Dell UltraSharp 27"', 'LG 24"', 'Samsung 27"', 'BenQ 24"'];
+
+function withProfile(employee: Employee, index: number): Employee {
+  const palette = AVATAR_PALETTES[index % AVATAR_PALETTES.length];
+  const skills = SKILLS_BY_DEPARTMENT[employee.departmentId] ?? SKILLS_BY_DEPARTMENT.eng;
+  const tags = TAGS_BY_DEPARTMENT[employee.departmentId] ?? TAGS_BY_DEPARTMENT.eng;
+  const bios: Record<string, string> = {
+    exec: 'Отвечает за стратегию, партнёрства и ключевые решения компании.',
+    eng: 'Развивает продукт, следит за качеством кода и надёжностью сервисов.',
+    product: 'Исследует пользователей и превращает инсайты в понятные продукты.',
+    marketing: 'Строит бренд работодателя и приводит команде новых клиентов.',
+    people: 'Заботится о сотрудниках, процессах найма и кадровом делопроизводстве.',
+  };
+  return {
+    ...employee,
+    avatarBg: palette.bg,
+    avatarColor: palette.color,
+    skills: [skills[index % skills.length], skills[(index + 1) % skills.length]],
+    tags: [tags[index % tags.length]],
+    bio: bios[employee.departmentId] ?? bios.eng,
+    contacts: {
+      emergencyName: `${EMERGENCY_NAMES[index % EMERGENCY_NAMES.length]} ${employee.name.split(' ')[0]}`,
+      emergencyPhone: `+7 (9${(10 + index).toString().padStart(2, '0')}) ${100 + index}-${20 + index}-${30 + index}`,
+    },
+    equipment: {
+      laptop: LAPTOPS[index % LAPTOPS.length],
+      monitor: MONITORS[index % MONITORS.length],
+    },
+  };
+}
+
 function buildEmployees(): Employee[] {
-  return [
+  const employees: Employee[] = [
     {
       id: 'emp-1',
       name: 'Алексей Морозов',
@@ -197,6 +274,24 @@ function buildEmployees(): Employee[] {
       birthday: '06-11',
       vacationTotal: 28,
       vacationUsed: 14,
+    },
+    {
+      id: 'emp-15',
+      name: 'Виктор Орлов',
+      role: 'Senior Backend Engineer',
+      departmentId: 'eng',
+      managerId: 'emp-2',
+      status: 'active',
+      format: 'Гибрид',
+      city: 'Москва',
+      timezone: 'МСК',
+      email: 'v.orlov@avroratech.ru',
+      telegram: '@vorlov',
+      phone: '+7 (926) 448-71-25',
+      startDate: '2023-11-20',
+      birthday: '11-05',
+      vacationTotal: 28,
+      vacationUsed: 5,
     },
     {
       id: 'emp-6',
@@ -307,6 +402,24 @@ function buildEmployees(): Employee[] {
       vacationUsed: 0,
     },
     {
+      id: 'emp-16',
+      name: 'Алиса Ветрова',
+      role: 'SMM & Community Manager',
+      departmentId: 'marketing',
+      managerId: 'emp-9',
+      status: 'active',
+      format: 'Удалённо',
+      city: 'Санкт-Петербург',
+      timezone: 'МСК',
+      email: 'a.vetrova@avroratech.ru',
+      telegram: '@avetrova',
+      phone: '+7 (921) 558-13-47',
+      startDate: '2024-03-18',
+      birthday: '02-27',
+      vacationTotal: 28,
+      vacationUsed: 4,
+    },
+    {
       id: 'emp-12',
       name: 'Анна Ковалёва',
       role: 'HR-директор',
@@ -342,75 +455,113 @@ function buildEmployees(): Employee[] {
       vacationTotal: 28,
       vacationUsed: 10,
     },
+    {
+      id: 'emp-17',
+      name: 'Роман Гусев',
+      role: 'HR Operations Manager',
+      departmentId: 'people',
+      managerId: 'emp-12',
+      status: 'active',
+      format: 'Офис',
+      city: 'Москва',
+      timezone: 'МСК',
+      email: 'r.gusev@avroratech.ru',
+      telegram: '@rgusev',
+      phone: '+7 (916) 377-62-90',
+      startDate: '2022-08-01',
+      birthday: '09-14',
+      vacationTotal: 28,
+      vacationUsed: 9,
+    },
   ];
+
+  return employees.map(withProfile);
+}
+
+function makeTrack(
+  id: string,
+  employeeId: string,
+  buddyId: string,
+  startedAt: string,
+  template: 'standard' | 'tech',
+  doneCount: number,
+  notes: string,
+): OnboardingTrack {
+  const tasks = ONBOARDING_TEMPLATES[template].map((item, index) => ({
+    id: `${id}-t${index + 1}`,
+    stage: item.stage,
+    title: item.title,
+    owner: item.owner,
+    priority: item.priority,
+    done: index < doneCount,
+  }));
+  const completed = doneCount >= tasks.length;
+  return {
+    id,
+    employeeId,
+    buddyId,
+    startedAt,
+    template,
+    status: completed ? 'completed' : 'active',
+    notes,
+    tasks,
+    completedAt: completed ? startedAt : undefined,
+  };
 }
 
 function buildOnboarding(): OnboardingTrack[] {
   return [
-    {
-      id: 'onb-1',
-      employeeId: 'emp-8',
-      buddyId: 'emp-6',
-      startedAt: offsetISO(-2),
-      tasks: [
-        { id: 't-101', stage: 'День 1', title: 'Выдать доступы в корпоративную почту, Notion, Amplitude и Metabase', owner: 'HR', done: true },
-        { id: 't-102', stage: 'День 1', title: 'Провести вводный звонок и рассказать о процессах команды', owner: 'Бадди', done: true },
-        { id: 't-103', stage: 'День 1', title: 'Оформить кадровые документы и заполнить карточку сотрудника', owner: 'HR', done: true },
-        { id: 't-104', stage: 'Первая неделя', title: 'Разобрать продуктовую воронку и ключевые дашборды', owner: 'Бадди', done: true },
-        { id: 't-105', stage: 'Первая неделя', title: 'Познакомиться с продакт-дизайнером и техлидом разработки', owner: 'Новичок', done: false },
-        { id: 't-106', stage: 'Первая неделя', title: 'Собрать первый отчёт по активации новых команд', owner: 'Новичок', done: false },
-        { id: 't-107', stage: 'Первый месяц', title: 'Согласовать цели на испытательный срок (3 месяца)', owner: 'Тимлид', done: false },
-        { id: 't-108', stage: 'Первый месяц', title: 'Пройти чек-ин второй недели с HRBP', owner: 'HR', done: false },
-      ],
-    },
-    {
-      id: 'onb-2',
-      employeeId: 'emp-5',
-      buddyId: 'emp-3',
-      startedAt: offsetISO(-9),
-      tasks: [
-        { id: 't-201', stage: 'День 1', title: 'Выдать доступы в GitHub, трекер задач, VPN и стенды', owner: 'Тимлид', done: true },
-        { id: 't-202', stage: 'День 1', title: 'Провести welcome-встречу с HR и подключить к чатам', owner: 'HR', done: true },
-        { id: 't-203', stage: 'День 1', title: 'Настроить локальное окружение и автотесты Playwright', owner: 'Бадди', done: true },
-        { id: 't-204', stage: 'Первая неделя', title: 'Изучить матрицу регресса и правила заведения баг-репортов', owner: 'Бадди', done: true },
-        { id: 't-205', stage: 'Первая неделя', title: 'Провести первое тестирование релиза на staging', owner: 'Новичок', done: true },
-        { id: 't-206', stage: 'Первая неделя', title: 'Поучаствовать в командном груминге и демо спринта', owner: 'Новичок', done: true },
-        { id: 't-207', stage: 'Первый месяц', title: 'Написать 5 автотестов для модуля отпусков', owner: 'Новичок', done: false },
-        { id: 't-208', stage: 'Первый месяц', title: 'Утвердить план развития на 3 месяца с CTO', owner: 'Тимлид', done: false },
-        { id: 't-209', stage: 'Первый месяц', title: 'Провести встречу обратной связи 2-й недели с HR', owner: 'HR', done: false },
-      ],
-    },
-    {
-      id: 'onb-3',
-      employeeId: 'emp-11',
-      buddyId: 'emp-10',
-      startedAt: offsetISO(-23),
-      tasks: [
-        { id: 't-301', stage: 'День 1', title: 'Выдать доступы к рекламным кабинетам, CRM и аналитике', owner: 'HR', done: true },
-        { id: 't-302', stage: 'День 1', title: 'Провести обзор позиционирования и целевой аудитории', owner: 'Бадди', done: true },
-        { id: 't-303', stage: 'Первая неделя', title: 'Провести аудит текущих кампаний и стоимости лида', owner: 'Новичок', done: true },
-        { id: 't-304', stage: 'Первая неделя', title: 'Согласовать гипотезы A/B-тестов с отделом продукта', owner: 'Тимлид', done: true },
-        { id: 't-305', stage: 'Первый месяц', title: 'Запустить 3 новые тестовые кампании', owner: 'Новичок', done: true },
-        { id: 't-306', stage: 'Первый месяц', title: 'Презентовать результаты первого месяца на встрече маркетинга', owner: 'Новичок', done: true },
-        { id: 't-307', stage: 'Первый месяц', title: 'Подвести итоги первого месяца с CMO и HR', owner: 'Тимлид', done: false },
-      ],
-    },
-    {
-      id: 'onb-4',
-      employeeId: 'emp-10',
-      buddyId: 'emp-9',
-      startedAt: '2024-07-08',
-      tasks: [
-        { id: 't-401', stage: 'День 1', title: 'Настроить рабочее место и доступы к Notion, Figma', owner: 'HR', done: true },
-        { id: 't-402', stage: 'Первая неделя', title: 'Изучить редполитику и стиль коммуникаций бренда', owner: 'Бадди', done: true },
-        { id: 't-403', stage: 'Первый месяц', title: 'Выпустить первые 4 кейса с клиентами компании', owner: 'Новичок', done: true },
-      ],
-    },
+    makeTrack('onb-1', 'emp-8', 'emp-6', offsetISO(-2), 'standard', 4, 'Новичок в продуктовой аналитике, нужен доступ к Amplitude и Metabase.'),
+    makeTrack('onb-2', 'emp-5', 'emp-3', offsetISO(-9), 'tech', 6, 'QA-инженер, фокус на Playwright и регрессионном тестировании.'),
+    makeTrack('onb-3', 'emp-11', 'emp-10', offsetISO(-23), 'standard', 8, 'Performance-маркетолог, передача рекламных кабинетов завершена.'),
+    makeTrack('onb-4', 'emp-10', 'emp-9', '2024-07-08', 'standard', 9, 'План закрыт, сотрудник успешно прошёл испытательный срок.'),
+    makeTrack('onb-5', 'emp-1', 'emp-12', '2021-03-15', 'standard', 9, 'Исторический план руководителя, архив.'),
+    makeTrack('onb-6', 'emp-2', 'emp-1', '2021-06-01', 'tech', 9, 'Исторический план CTO, архив.'),
+    makeTrack('onb-7', 'emp-3', 'emp-2', '2022-09-12', 'tech', 8, 'Остался финальный чек-ин по целям.'),
+    makeTrack('onb-8', 'emp-4', 'emp-2', '2023-04-10', 'tech', 9, 'План завершён, сотрудник в штате.'),
+    makeTrack('onb-9', 'emp-7', 'emp-6', '2023-08-21', 'standard', 7, 'Дизайнер, осталось согласовать цели и провести итоговую встречу.'),
+    makeTrack('onb-10', 'emp-9', 'emp-1', '2022-05-11', 'standard', 9, 'Исторический план CMO, архив.'),
+    makeTrack('onb-11', 'emp-12', 'emp-1', '2021-11-08', 'standard', 9, 'Исторический план HR-директора, архив.'),
+    makeTrack('onb-12', 'emp-13', 'emp-12', '2023-10-02', 'standard', 8, 'Рекрутер, завершает первый месяц.'),
+    makeTrack('onb-13', 'emp-15', 'emp-2', '2023-11-20', 'tech', 5, 'Backend-инженер, в процессе знакомства с сервисами.'),
+    makeTrack('onb-14', 'emp-16', 'emp-9', '2024-03-18', 'standard', 6, 'SMM-менеджер, подключена к контент-плану.'),
+    makeTrack('onb-15', 'emp-17', 'emp-12', '2022-08-01', 'standard', 9, 'Исторический план HR Operations, архив.'),
   ];
 }
 
+interface LeaveSeed extends Omit<Leave, 'priority' | 'createdAt' | 'approvals' | 'handover'> {
+  priority?: LeavePriority;
+  createdAt?: string;
+  handover?: LeaveHandover;
+}
+
+function makeLeave(input: LeaveSeed, index: number): Leave {
+  const createdAt = input.createdAt ?? offsetISO(-(index + 1));
+  const approvals: LeaveApproval[] =
+    input.status === 'pending'
+      ? []
+      : [
+          {
+            id: `ap-${input.id}`,
+            by: input.status === 'rejected' ? 'emp-2' : 'emp-12',
+            at: createdAt,
+            decision: input.status,
+            comment:
+              input.status === 'rejected'
+                ? 'Пересечение с отпуском коллеги из отдела'
+                : 'Согласовано, передача задач подтверждена',
+          },
+        ];
+  return {
+    ...input,
+    priority: input.priority ?? 'normal',
+    createdAt,
+    approvals,
+  };
+}
+
 function buildLeaves(): Leave[] {
-  return [
+  const leaves: LeaveSeed[] = [
     {
       id: 'lv-1',
       employeeId: 'emp-4',
@@ -419,6 +570,8 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(4),
       status: 'approved',
       comment: 'Осенний отпуск, сервисы под присмотром Никиты',
+      priority: 'normal',
+      handover: { backupEmployeeId: 'emp-14', note: 'Сопровождение backend-сервисов и дежурство' },
     },
     {
       id: 'lv-2',
@@ -428,6 +581,7 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(0),
       status: 'approved',
       comment: 'Личный день, на связи в Telegram',
+      priority: 'low',
     },
     {
       id: 'lv-3',
@@ -437,6 +591,8 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(10),
       status: 'pending',
       comment: 'Отпуск после финализации макетов нового модуля',
+      priority: 'normal',
+      handover: { backupEmployeeId: 'emp-8', note: 'Передача макетов и дизайн-ревью' },
     },
     {
       id: 'lv-4',
@@ -446,6 +602,8 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(5),
       status: 'pending',
       comment: 'Поездка к семье, ревью передала Игорю',
+      priority: 'high',
+      handover: { backupEmployeeId: 'emp-2', note: 'Код-ревью и релизные задачи' },
     },
     {
       id: 'lv-5',
@@ -455,6 +613,7 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(2),
       status: 'pending',
       comment: 'Один день по семейным делам',
+      priority: 'low',
     },
     {
       id: 'lv-6',
@@ -464,6 +623,8 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(28),
       status: 'approved',
       comment: 'Плановый отпуск в конце года',
+      priority: 'normal',
+      handover: { backupEmployeeId: 'emp-7', note: 'Продуктовые решения и дизайн-ревью' },
     },
     {
       id: 'lv-7',
@@ -473,6 +634,7 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(-8),
       status: 'approved',
       comment: 'Больничный, лист передан в бухгалтерию',
+      priority: 'high',
     },
     {
       id: 'lv-8',
@@ -482,8 +644,173 @@ function buildLeaves(): Leave[] {
       endDate: offsetISO(21),
       status: 'approved',
       comment: 'Контент-план на декабрь подготовлен заранее',
+      priority: 'normal',
+      handover: { backupEmployeeId: 'emp-16', note: 'Публикации и коммуникации в соцсетях' },
+    },
+    {
+      id: 'lv-9',
+      employeeId: 'emp-1',
+      type: 'vacation',
+      startDate: offsetISO(34),
+      endDate: offsetISO(41),
+      status: 'approved',
+      comment: 'Плановый отпуск, операционные вопросы у CTO',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-10',
+      employeeId: 'emp-2',
+      type: 'vacation',
+      startDate: offsetISO(-46),
+      endDate: offsetISO(-39),
+      status: 'approved',
+      comment: 'Отпуск в сентябре, релизный цикл закрыт',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-11',
+      employeeId: 'emp-3',
+      type: 'dayoff',
+      startDate: offsetISO(-16),
+      endDate: offsetISO(-16),
+      status: 'rejected',
+      comment: 'Заявка пересекается с релизом',
+      priority: 'low',
+    },
+    {
+      id: 'lv-12',
+      employeeId: 'emp-4',
+      type: 'vacation',
+      startDate: offsetISO(-60),
+      endDate: offsetISO(-53),
+      status: 'approved',
+      comment: 'Летний отпуск',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-13',
+      employeeId: 'emp-5',
+      type: 'sick',
+      startDate: offsetISO(-4),
+      endDate: offsetISO(-3),
+      status: 'approved',
+      comment: 'Больничный, справка предоставлена',
+      priority: 'high',
+    },
+    {
+      id: 'lv-14',
+      employeeId: 'emp-6',
+      type: 'dayoff',
+      startDate: offsetISO(-7),
+      endDate: offsetISO(-7),
+      status: 'approved',
+      comment: 'Личный день',
+      priority: 'low',
+    },
+    {
+      id: 'lv-15',
+      employeeId: 'emp-7',
+      type: 'vacation',
+      startDate: offsetISO(44),
+      endDate: offsetISO(51),
+      status: 'pending',
+      comment: 'Планирует зимний отпуск',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-16',
+      employeeId: 'emp-8',
+      type: 'vacation',
+      startDate: offsetISO(12),
+      endDate: offsetISO(18),
+      status: 'rejected',
+      comment: 'Нет подтверждения от руководителя',
+      priority: 'low',
+    },
+    {
+      id: 'lv-17',
+      employeeId: 'emp-9',
+      type: 'vacation',
+      startDate: offsetISO(28),
+      endDate: offsetISO(35),
+      status: 'approved',
+      comment: 'Отпуск после запуска кампании',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-18',
+      employeeId: 'emp-10',
+      type: 'sick',
+      startDate: offsetISO(-30),
+      endDate: offsetISO(-28),
+      status: 'approved',
+      comment: 'Больничный, задачи переданы Алисе',
+      priority: 'high',
+    },
+    {
+      id: 'lv-19',
+      employeeId: 'emp-11',
+      type: 'vacation',
+      startDate: offsetISO(8),
+      endDate: offsetISO(12),
+      status: 'pending',
+      comment: 'Отпуск после завершения испытательного срока',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-20',
+      employeeId: 'emp-12',
+      type: 'vacation',
+      startDate: offsetISO(24),
+      endDate: offsetISO(31),
+      status: 'approved',
+      comment: 'Плановый отпуск, HR-процессы переданы Полине',
+      priority: 'normal',
+      handover: { backupEmployeeId: 'emp-13', note: 'HR-операции и срочные согласования' },
+    },
+    {
+      id: 'lv-21',
+      employeeId: 'emp-13',
+      type: 'vacation',
+      startDate: offsetISO(-80),
+      endDate: offsetISO(-74),
+      status: 'approved',
+      comment: 'Отпуск в августе',
+      priority: 'low',
+    },
+    {
+      id: 'lv-22',
+      employeeId: 'emp-15',
+      type: 'dayoff',
+      startDate: offsetISO(3),
+      endDate: offsetISO(3),
+      status: 'pending',
+      comment: 'Личный день, дежурство передано Артёму',
+      priority: 'low',
+    },
+    {
+      id: 'lv-23',
+      employeeId: 'emp-16',
+      type: 'vacation',
+      startDate: offsetISO(19),
+      endDate: offsetISO(25),
+      status: 'approved',
+      comment: 'Отпуск, контент-план согласован',
+      priority: 'normal',
+    },
+    {
+      id: 'lv-24',
+      employeeId: 'emp-17',
+      type: 'vacation',
+      startDate: offsetISO(31),
+      endDate: offsetISO(38),
+      status: 'pending',
+      comment: 'Планирует отпуск в конце декабря',
+      priority: 'normal',
     },
   ];
+
+  return leaves.map(makeLeave);
 }
 
 export function buildDefaultData(): AppData {

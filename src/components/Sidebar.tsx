@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useHr } from '../state/HrContext';
 import type { ViewKey } from '../types';
 import {
@@ -25,11 +25,8 @@ const NAV_ITEMS: Array<{
 ];
 
 export function Sidebar() {
-  const location = useLocation();
-  const { data, ui, patchUi, goTo, openDrawer, resetDemo, getOnboardingProgress, getEmployee } =
-    useHr();
+  const { data, ui, patchUi, openDrawer, resetDemo, getOnboardingProgress, getEmployee } = useHr();
 
-  const activeView = (location.pathname.split('/')[1] || 'overview') as ViewKey;
   const activeOnboarding = data.onboarding.filter(
     (track) => getOnboardingProgress(track).percent < 100,
   ).length;
@@ -47,17 +44,10 @@ export function Sidebar() {
     <aside
       id="sidebar"
       className={`sidebar${ui.sidebarOpen ? ' open' : ''}`}
-      aria-label="Навигация"
+      aria-label="Боковая навигация"
     >
-      <div className="sidebar-header">
-        <a
-          href="#/overview"
-          className="brand"
-          onClick={(event) => {
-            event.preventDefault();
-            goTo('overview');
-          }}
-        >
+      <header className="sidebar-header">
+        <NavLink to="/overview" className="brand" onClick={() => patchUi({ sidebarOpen: false })}>
           <span className="brand-mark" aria-hidden="true">
             <BrandMark />
           </span>
@@ -65,44 +55,47 @@ export function Sidebar() {
             <span className="brand-name">Основа</span>
             <span className="brand-company">Аврора Тех</span>
           </span>
-        </a>
+        </NavLink>
         <button
-          className="icon-btn mobile-only"
+          className="icon-btn sidebar-close"
           type="button"
           aria-label="Закрыть меню"
           onClick={() => patchUi({ sidebarOpen: false })}
         >
           <IconClose />
         </button>
-      </div>
+      </header>
 
-      <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const count = countFor(item.view);
-          return (
-            <button
-              key={item.view}
-              className={`nav-item${activeView === item.view ? ' active' : ''}`}
-              data-view={item.view}
-              type="button"
-              onClick={() => goTo(item.view)}
-            >
-              <Icon className="nav-icon" />
-              <span>{item.label}</span>
-              {count && (
-                <span
-                  className={`nav-count${count.warn ? ' warn' : ''}${count.count === 0 ? ' is-zero' : ''}`}
+      <nav className="sidebar-nav" aria-label="Основная навигация">
+        <ul className="nav-list">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const count = countFor(item.view);
+            return (
+              <li key={item.view}>
+                <NavLink
+                  to={`/${item.view}`}
+                  className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                  onClick={() => patchUi({ sidebarOpen: false })}
                 >
-                  {count.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                  <Icon className="nav-icon" />
+                  <span>{item.label}</span>
+                  {count ? (
+                    <span
+                      className={`nav-count${count.warn ? ' warn' : ''}${count.count === 0 ? ' is-zero' : ''}`}
+                      aria-label={`${count.count}`}
+                    >
+                      {count.count}
+                    </span>
+                  ) : null}
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      <div className="sidebar-footer">
+      <footer className="sidebar-footer">
         <button
           className="current-user-btn"
           type="button"
@@ -117,7 +110,7 @@ export function Sidebar() {
         <button className="btn-reset-demo" type="button" onClick={resetDemo}>
           Сбросить демо-данные
         </button>
-      </div>
+      </footer>
     </aside>
   );
 }

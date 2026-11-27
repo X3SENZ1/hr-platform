@@ -37,7 +37,7 @@ import type {
   ViewKey,
 } from '../types';
 
-const STORAGE_KEY = 'osnova_hr_state_v3';
+const STORAGE_KEY = 'osnova_hr_state_v4';
 
 export interface ToastMessage {
   id: string;
@@ -96,8 +96,11 @@ function createInitialUi(): UiState {
   return {
     empSearch: '',
     empDept: 'all',
-    empStatus: 'all',
+    empStatuses: ['active', 'probation', 'on_leave'],
     empLayout: 'table',
+    empSortKey: 'name',
+    empSortDir: 'asc',
+    empPage: 1,
     onbFilter: 'active',
     onbOwnerFilter: 'all',
     selectedOnbId: null,
@@ -105,6 +108,7 @@ function createInitialUi(): UiState {
     leaveStatusFilter: 'all',
     leaveDeptFilter: 'all',
     leaveShowAllTimeline: false,
+    leavePage: 1,
     structureMode: 'tree',
     structureSearch: '',
     sidebarOpen: false,
@@ -127,7 +131,8 @@ function loadState(): AppData {
         Array.isArray(parsed.employees) &&
         Array.isArray(parsed.departments) &&
         Array.isArray(parsed.onboarding) &&
-        Array.isArray(parsed.leaves)
+        Array.isArray(parsed.leaves) &&
+        parsed.departments.every((department) => department.code && department.createdAt)
       ) {
         return parsed as AppData;
       }
@@ -211,7 +216,8 @@ export function HrProvider({ children }: { children: ReactNode }) {
       setUi((prev) => ({
         ...prev,
         empDept: departmentId,
-        empStatus: 'all',
+        empStatuses: ['active', 'probation', 'on_leave'],
+        empPage: 1,
         sidebarOpen: false,
       }));
       navigate('/employees');
@@ -300,6 +306,11 @@ export function HrProvider({ children }: { children: ReactNode }) {
         vacationUsed: 0,
         avatarBg: palette.bg,
         avatarColor: palette.color,
+        skills: [],
+        tags: [],
+        contacts: { emergencyName: '', emergencyPhone: '' },
+        equipment: { laptop: '', monitor: '' },
+        bio: 'Новый сотрудник компании «Аврора Тех».',
       };
 
       let newTrack: OnboardingTrack | null = null;
@@ -314,6 +325,9 @@ export function HrProvider({ children }: { children: ReactNode }) {
           buddyId,
           startedAt: input.startDate,
           tasks: buildOnboardingTasks(template),
+          template,
+          status: 'active',
+          notes: 'План создан автоматически при добавлении сотрудника',
         };
       }
 
@@ -344,6 +358,20 @@ export function HrProvider({ children }: { children: ReactNode }) {
         endDate: input.endDate,
         status: input.status,
         comment: input.comment,
+        priority: input.priority,
+        createdAt: new Date().toISOString().slice(0, 10),
+        approvals:
+          input.status === 'approved'
+            ? [
+                {
+                  id: `ap-${Date.now()}`,
+                  by: 'emp-12',
+                  at: new Date().toISOString().slice(0, 10),
+                  decision: 'approved',
+                  comment: 'Создано с одобрением',
+                },
+              ]
+            : [],
       };
       const days = Math.max(
         0,
@@ -405,6 +433,9 @@ export function HrProvider({ children }: { children: ReactNode }) {
         buddyId: input.buddyId,
         startedAt: employee.startDate || new Date().toISOString().slice(0, 10),
         tasks: buildOnboardingTasks(input.template === 'tech' ? 'tech' : 'standard'),
+        template: input.template === 'tech' ? 'tech' : 'standard',
+        status: 'active',
+        notes: 'План создан вручную из интерфейса',
       };
 
       setData((prev) => ({ ...prev, onboarding: [newTrack, ...prev.onboarding] }));
@@ -427,25 +458,47 @@ export function HrProvider({ children }: { children: ReactNode }) {
         const target = prev.leaves.find((leave) => leave.id === leaveId);
         if (!target) return prev;
 
+        const days = Math.max(
+          0,
+          Math.round(
+            (new Date(`${target.endDate}T12:00:00`).getTime() -
+              new Date(`${target.startDate}T12:00:00`).getTime()) /
+              86_400_000,
+          ) + 1,
+        );
+
+        const approval = {
+          id: `ap-${Date.now()}`,
+          by: 'emp-12',
+          at: new Date().toISOString().slice(0, 10),
+          decision,
+          comment: decision === 'approved' ? 'Согласовано в интерфейсе' : 'Отклонено в интерфейсе',
+        };
+
         const leaves = prev.leaves.map((leave) =>
-          leave.id === leaveId ? { ...leave, status: decision } : leave,
+          leave.id === leaveId
+            ? { ...leave, status: decision, approvals: [...(leave.approvals ?? []), approval] }
+            : leave,
         );
 
         let employees = prev.employees;
-        if (target.status !== 'approved' && decision === 'approved' && target.type === 'vacation') {
-          const days = Math.max(
-            0,
-            Math.round(
-              (new Date(`${target.endDate}T12:00:00`).getTime() -
-                new Date(`${target.startDate}T12:00:00`).getTime()) /
-                86_400_000,
-            ) + 1,
-          );
-          employees = prev.employees.map((employee) =>
-            employee.id === target.employeeId
-              ? { ...employee, vacationUsed: (employee.vacationUsed || 0) + days }
-              : employee,
-          );
+        if (target.type === 'vacation') {
+          if (target.status !== 'approved' && decision === 'approved') {
+            employees = prev.employees.map((employee) =>
+              employee.id === target.employeeId
+                ? { ...employee, vacationUsed: (employee.vacationUsed || 0) + days }
+                : employee,
+            );
+          } else if (target.status === 'approved' && decision !== 'approved') {
+            employees = prev.employees.map((employee) =>
+              employee.id === target.employeeId
+                ? {
+                    ...employee,
+                    vacationUsed: Math.max(0, (employee.vacationUsed || 0) - days),
+                  }
+                : employee,
+            );
+          }
         }
 
         return { ...prev, leaves, employees };
@@ -512,7 +565,7 @@ export function HrProvider({ children }: { children: ReactNode }) {
               ...track,
               tasks: [
                 ...track.tasks,
-                { id: `t-${Date.now()}`, stage, title, owner, done: false },
+                { id: `t-${Date.now()}`, stage, title, owner, done: false, priority: 'normal' },
               ],
             }
           : track,

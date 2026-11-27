@@ -92,6 +92,16 @@ export function formatDateRange(startIso: string, endIso: string): string {
   return `${sStr} – ${e.getDate()} ${MONTHS_SHORT_RU[e.getMonth()]}`;
 }
 
+export function formatDateShort(iso: string): string {
+  const d = parseISODate(iso);
+  if (!d) return '—';
+  return `${d.getDate()} ${MONTHS_SHORT_RU[d.getMonth()]}`;
+}
+
+export function formatMonthYear(year: number, monthIndex: number): string {
+  return `${MONTHS_NOM_RU[monthIndex]} ${year}`;
+}
+
 export function countCalendarDays(startIso: string, endIso: string): number {
   const s = parseISODate(startIso);
   const e = parseISODate(endIso);

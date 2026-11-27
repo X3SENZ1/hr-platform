@@ -1,4 +1,12 @@
-import type { LeaveStatus, LeaveType, ModalKind, ViewKey } from '../types';
+import type {
+  EmployeeStatusFilter,
+  LeavePriority,
+  LeaveStatus,
+  LeaveType,
+  ModalKind,
+  ThemeName,
+  ViewKey,
+} from '../types';
 
 export const AVATAR_PALETTES = [
   { bg: '#E5E7EB', color: '#1F2937' },
@@ -19,6 +27,30 @@ export const LEAVE_STATUS_META: Record<LeaveStatus, { label: string; statusClass
   pending: { label: 'На согласовании', statusClass: 'status-probation' },
   approved: { label: 'Одобрено', statusClass: 'status-active' },
   rejected: { label: 'Отклонено', statusClass: 'status-sick' },
+};
+
+export const LEAVE_PRIORITY_META: Record<
+  LeavePriority,
+  { label: string; className: string; icon: string }
+> = {
+  high: { label: 'Высокий', className: 'priority-high', icon: '▲' },
+  normal: { label: 'Обычный', className: 'priority-normal', icon: '●' },
+  low: { label: 'Низкий', className: 'priority-low', icon: '▼' },
+};
+
+export const EMPLOYEE_STATUS_FILTERS: Array<{
+  value: EmployeeStatusFilter;
+  label: string;
+}> = [
+  { value: 'active', label: 'В штате' },
+  { value: 'probation', label: 'Испытательный' },
+  { value: 'on_leave', label: 'Отсутствует' },
+];
+
+export const THEME_META: Record<ThemeName, { label: string; description: string }> = {
+  light: { label: 'Светлая', description: 'Нейтральная светлая тема' },
+  dark: { label: 'Тёмная', description: 'Тёмная тема для вечерней работы' },
+  contrast: { label: 'Контраст', description: 'Высококонтрастная тема' },
 };
 
 export const VIEW_META: Record<
@@ -62,3 +94,6 @@ export const OWNERS = ['all', 'HR', 'Бадди', 'Тимлид', 'Новичо�
 export const ONBOARDING_STAGES = ['День 1', 'Первая неделя', 'Первый месяц'];
 
 export const EMPLOYEE_FORMATS = ['Гибрид', 'Удалённо', 'Офис'];
+
+export const EMPLOYEES_PAGE_SIZE = 8;
+export const LEAVES_PAGE_SIZE = 8;

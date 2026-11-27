@@ -1,6 +1,16 @@
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useHr } from '../../state/HrContext';
 import { Avatar } from '../ui';
 import { IconSearch } from '../icons';
+import { ModalShell } from './ModalShell';
+
+interface CommandItem {
+  key: string;
+  label: string;
+  hint: string;
+  employeeId?: string;
+  run: () => void;
+}
 
 export function CommandPalette() {
   const {
@@ -13,126 +23,149 @@ export function CommandPalette() {
     goTo,
     getDepartment,
   } = useHr();
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const query = ui.commandQuery.trim().toLowerCase();
 
-  const actions = [
-    {
-      label: 'Добавить сотрудника',
-      hint: 'Штат',
-      run: () => openModal('addEmployee'),
-    },
-    {
-      label: 'Оформить отпуск / отгул',
-      hint: 'Отпуска',
-      run: () => openModal('addLeave'),
-    },
-    {
-      label: 'Открыть оргсхему',
-      hint: 'Структура',
-      run: () => {
-        closeModal();
-        goTo('structure');
+  const items = useMemo<CommandItem[]>(() => {
+    const actions: CommandItem[] = [
+      {
+        key: 'action-employee',
+        label: 'Добавить сотрудника',
+        hint: 'Штат',
+        run: () => openModal('addEmployee'),
       },
-    },
-    {
-      label: 'Перейти к онбордингу',
-      hint: 'Онбординг',
-      run: () => {
-        closeModal();
-        goTo('onboarding');
+      {
+        key: 'action-leave',
+        label: 'Оформить отпуск / отгул',
+        hint: 'Отпуска',
+        run: () => openModal('addLeave'),
       },
-    },
-  ].filter((action) => !query || action.label.toLowerCase().includes(query));
+      {
+        key: 'action-structure',
+        label: 'Открыть оргсхему',
+        hint: 'Структура',
+        run: () => {
+          closeModal();
+          goTo('structure');
+        },
+      },
+      {
+        key: 'action-onboarding',
+        label: 'Перейти к онбордингу',
+        hint: 'Онбординг',
+        run: () => {
+          closeModal();
+          goTo('onboarding');
+        },
+      },
+    ].filter((action) => !query || action.label.toLowerCase().includes(query));
 
-  const employees = data.employees
-    .filter((employee) => {
-      if (!query) return true;
-      return `${employee.name} ${employee.role} ${employee.city}`.toLowerCase().includes(query);
-    })
-    .slice(0, 6);
+    const employees: CommandItem[] = data.employees
+      .filter((employee) => {
+        if (!query) return true;
+        return `${employee.name} ${employee.role} ${employee.city}`
+          .toLowerCase()
+          .includes(query);
+      })
+      .slice(0, 6)
+      .map((employee) => ({
+        key: `employee-${employee.id}`,
+        label: employee.name,
+        hint: `${employee.role}${getDepartment(employee.departmentId) ? ` · ${getDepartment(employee.departmentId)?.name}` : ''}`,
+        employeeId: employee.id,
+        run: () => {
+          closeModal();
+          openDrawer(employee.id);
+        },
+      }));
+
+    return [...employees, ...actions];
+  }, [closeModal, data.employees, getDepartment, goTo, openModal, query]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % Math.max(1, items.length));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((index) => (index - 1 + items.length) % Math.max(1, items.length));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      items[activeIndex]?.run();
+    } else if (event.key === 'Escape') {
+      closeModal();
+    }
+  };
 
   return (
-    <div
-      id="commandModal"
-      className="modal command-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Быстрый поиск"
-    >
+    <ModalShell id="commandModal" labelledBy="commandTitle" className="command-modal">
+      <h2 id="commandTitle" className="visually-hidden">
+        Быстрый поиск по платформе
+      </h2>
       <div className="command-input-wrap">
         <IconSearch />
         <input
           id="commandInput"
           type="text"
-          placeholder="Найти сотрудника, отдел или действие..."
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="commandResults"
+          aria-autocomplete="list"
+          placeholder="Найти сотрудника или действие…"
           autoComplete="off"
-          autoFocus
           value={ui.commandQuery}
           onChange={(event) => patchUi({ commandQuery: event.target.value })}
+          onKeyDown={handleKeyDown}
         />
         <button className="kbd" type="button" onClick={closeModal}>
           Esc
         </button>
       </div>
-      <div id="commandResults" className="command-results">
-        {employees.length > 0 && (
-          <>
-            <div className="command-group-title">Сотрудники</div>
-            {employees.map((employee) => {
-              const department = getDepartment(employee.departmentId);
-              return (
-                <button
-                  className="command-item"
-                  key={employee.id}
-                  type="button"
-                  onClick={() => {
-                    closeModal();
-                    openDrawer(employee.id);
-                  }}
-                >
-                  <div className="person-cell">
-                    <Avatar employee={employee} size="sm" />
-                    <div className="person-meta">
-                      <div className="person-name">{employee.name}</div>
-                      <div className="person-sub">
-                        {employee.role}
-                        {department ? ` · ${department.name}` : ''}
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Открыть →</span>
-                </button>
-              );
-            })}
-          </>
-        )}
-
-        {actions.length > 0 && (
-          <>
-            <div className="command-group-title">Действия</div>
-            {actions.map((action) => (
+      <div id="commandResults" className="command-results" role="listbox">
+        {items.length === 0 ? (
+          <p className="empty-state">
+            <span className="empty-state-title">Ничего не найдено</span>
+            <span>Попробуйте другое имя или действие</span>
+          </p>
+        ) : (
+          items.map((item, index) => {
+            const employee = item.employeeId
+              ? data.employees.find((entry) => entry.id === item.employeeId)
+              : null;
+            return (
               <button
-                className="command-item"
-                key={action.label}
+                className={`command-item${index === activeIndex ? ' active' : ''}`}
+                key={item.key}
                 type="button"
-                onClick={action.run}
+                role="option"
+                aria-selected={index === activeIndex}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={item.run}
               >
-                <span>{action.label}</span>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  {action.hint}
+                {employee ? (
+                  <span className="person-cell">
+                    <Avatar employee={employee} size="sm" />
+                    <span className="person-meta">
+                      <span className="person-name">{item.label}</span>
+                      <span className="person-sub">{item.hint}</span>
+                    </span>
+                  </span>
+                ) : (
+                  <span>{item.label}</span>
+                )}
+                <span className="command-hint">
+                  {employee ? 'Открыть →' : item.hint}
                 </span>
               </button>
-            ))}
-          </>
-        )}
-
-        {employees.length === 0 && actions.length === 0 && (
-          <div className="empty-state" style={{ padding: 20 }}>
-            Ничего не найдено
-          </div>
+            );
+          })
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

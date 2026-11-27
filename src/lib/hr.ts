@@ -105,6 +105,7 @@ export function getUpcomingBirthdays(employees: Employee[], now = new Date()): B
         employee,
         daysUntil,
         dateStr: `${birthday.getDate()} ${MONTHS_SHORT_RU[birthday.getMonth()]}`,
+        dateIso: `${birthday.getFullYear()}-${String(birthday.getMonth() + 1).padStart(2, '0')}-${String(birthday.getDate()).padStart(2, '0')}`,
       });
     }
   });

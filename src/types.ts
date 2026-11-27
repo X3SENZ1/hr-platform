@@ -1,23 +1,40 @@
 export type ViewKey = 'overview' | 'employees' | 'onboarding' | 'leaves' | 'structure';
 
 export type EmployeeStatus = 'active' | 'probation';
+export type EmployeeStatusFilter = 'active' | 'probation' | 'on_leave';
 
 export type LeaveType = 'vacation' | 'dayoff' | 'sick';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+export type LeavePriority = 'low' | 'normal' | 'high';
 
 export type OnboardingFilter = 'active' | 'completed';
 export type EmployeeLayout = 'table' | 'cards';
 export type StructureMode = 'tree' | 'cards';
 export type DrawerTab = 'profile' | 'leaves' | 'onb';
 export type ModalKind = 'addEmployee' | 'addLeave' | 'addOnboarding' | 'command';
+export type ThemeName = 'light' | 'dark' | 'contrast';
+export type ThemePreference = 'system' | ThemeName;
 
 export interface Department {
   id: string;
+  code: string;
   name: string;
   color: string;
   leadId: string;
   openRoles: number;
   description: string;
+  createdAt: string;
+  goals: string[];
+}
+
+export interface EmployeeContacts {
+  emergencyName: string;
+  emergencyPhone: string;
+}
+
+export interface EmployeeEquipment {
+  laptop: string;
+  monitor: string;
 }
 
 export interface Employee {
@@ -39,6 +56,11 @@ export interface Employee {
   vacationUsed: number;
   avatarBg?: string;
   avatarColor?: string;
+  skills?: string[];
+  tags?: string[];
+  contacts?: EmployeeContacts;
+  equipment?: EmployeeEquipment;
+  bio?: string;
 }
 
 export interface OnboardingTask {
@@ -47,6 +69,7 @@ export interface OnboardingTask {
   title: string;
   owner: string;
   done: boolean;
+  priority?: LeavePriority;
 }
 
 export interface OnboardingTrack {
@@ -55,6 +78,23 @@ export interface OnboardingTrack {
   buddyId: string;
   startedAt: string;
   tasks: OnboardingTask[];
+  template: 'standard' | 'tech';
+  status: 'active' | 'completed';
+  notes: string;
+  completedAt?: string;
+}
+
+export interface LeaveApproval {
+  id: string;
+  by: string;
+  at: string;
+  decision: Exclude<LeaveStatus, 'pending'>;
+  comment?: string;
+}
+
+export interface LeaveHandover {
+  backupEmployeeId: string;
+  note: string;
 }
 
 export interface Leave {
@@ -65,6 +105,10 @@ export interface Leave {
   endDate: string;
   status: LeaveStatus;
   comment: string;
+  priority?: LeavePriority;
+  createdAt?: string;
+  approvals?: LeaveApproval[];
+  handover?: LeaveHandover;
 }
 
 export interface AppData {
@@ -74,11 +118,24 @@ export interface AppData {
   leaves: Leave[];
 }
 
+export type EmployeeSortKey =
+  | 'name'
+  | 'role'
+  | 'department'
+  | 'city'
+  | 'status'
+  | 'vacation';
+
+export type SortDirection = 'asc' | 'desc';
+
 export interface UiState {
   empSearch: string;
   empDept: string;
-  empStatus: string;
+  empStatuses: EmployeeStatusFilter[];
   empLayout: EmployeeLayout;
+  empSortKey: EmployeeSortKey;
+  empSortDir: SortDirection;
+  empPage: number;
   onbFilter: OnboardingFilter;
   onbOwnerFilter: string;
   selectedOnbId: string | null;
@@ -86,6 +143,7 @@ export interface UiState {
   leaveStatusFilter: 'all' | LeaveStatus;
   leaveDeptFilter: string;
   leaveShowAllTimeline: boolean;
+  leavePage: number;
   structureMode: StructureMode;
   structureSearch: string;
   sidebarOpen: boolean;
@@ -98,7 +156,7 @@ export interface UiState {
 }
 
 export interface StatusMeta {
-  key: 'active' | 'probation' | 'on_leave';
+  key: EmployeeStatusFilter;
   label: string;
   statusClass: string;
 }
@@ -119,6 +177,7 @@ export interface Birthday {
   employee: Employee;
   daysUntil: number;
   dateStr: string;
+  dateIso: string;
 }
 
 export interface NewEmployeeInput {
@@ -141,6 +200,7 @@ export interface NewLeaveInput {
   startDate: string;
   endDate: string;
   comment: string;
+  priority: LeavePriority;
 }
 
 export interface NewOnboardingInput {

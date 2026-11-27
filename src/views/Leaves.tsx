@@ -1,15 +1,20 @@
+import { useSearchParams } from 'react-router-dom';
 import { useHr } from '../state/HrContext';
 import {
   countCalendarDays,
   formatDateRange,
   MONTHS_NOM_RU,
+  pluralize,
   toISODate,
   TODAY_ISO,
 } from '../lib/date';
-import { LEAVE_STATUS_META, LEAVE_TYPE_META } from '../lib/meta';
+import { LEAVE_PRIORITY_META, LEAVE_STATUS_META, LEAVE_TYPE_META } from '../lib/meta';
 import type { LeaveStatus } from '../types';
-import { Avatar, StatusText } from '../components/ui';
+import { Avatar, EmptyState, PriorityBadge, StatusBadge } from '../components/ui';
+import { CustomSelect, RadioGroup } from '../components/Filters';
 import { IconChevronLeft, IconChevronRight } from '../components/icons';
+
+const LEAVES_PAGE_SIZE = 8;
 
 export function Leaves() {
   const {
@@ -23,6 +28,7 @@ export function Leaves() {
     deleteLeave,
     openDrawer,
   } = useHr();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const pendingLeaves = data.leaves.filter((leave) => leave.status === 'pending');
 
@@ -61,33 +67,66 @@ export function Leaves() {
   });
 
   const filteredRequests = data.leaves
-    .filter(
-      (leave) => ui.leaveStatusFilter === 'all' || leave.status === ui.leaveStatusFilter,
-    )
+    .filter((leave) => ui.leaveStatusFilter === 'all' || leave.status === ui.leaveStatusFilter)
     .slice()
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / LEAVES_PAGE_SIZE));
+  const rawPage = Number(searchParams.get('lpage') ?? '1');
+  const page = Math.min(
+    Math.max(1, Number.isFinite(rawPage) ? Math.trunc(rawPage) : 1),
+    totalPages,
+  );
+  const pageItems = filteredRequests.slice(
+    (page - 1) * LEAVES_PAGE_SIZE,
+    page * LEAVES_PAGE_SIZE,
+  );
+
+  const setPage = (next: number) => {
+    const safe = Math.min(Math.max(1, next), totalPages);
+    const params = new URLSearchParams(searchParams);
+    if (safe <= 1) params.delete('lpage');
+    else params.set('lpage', String(safe));
+    setSearchParams(params);
+  };
+
+  const resetPageParam = () => {
+    if (!searchParams.has('lpage')) return;
+    const params = new URLSearchParams(searchParams);
+    params.delete('lpage');
+    setSearchParams(params, { replace: true });
+  };
 
   const shiftMonth = (delta: number) => {
     const next = new Date(year, month + delta, 1);
     patchUi({ leaveMonth: { year: next.getFullYear(), month: next.getMonth() } });
   };
 
-  const setStatusFilter = (value: string) => {
-    patchUi({ leaveStatusFilter: value as 'all' | LeaveStatus });
+  const setStatusFilter = (value: 'all' | LeaveStatus) => {
+    patchUi({ leaveStatusFilter: value });
+    resetPageParam();
   };
 
   return (
-    <>
-      {pendingLeaves.length > 0 && (
-        <section className="card" style={{ marginBottom: 18 }}>
-          <div className="card-header">
-            <h2 className="card-title">Ожидают согласования ({pendingLeaves.length})</h2>
-          </div>
-          <div>
+    <div className="stack">
+      {pendingLeaves.length > 0 ? (
+        <section className="card" aria-labelledby="pending-leaves-title">
+          <header className="card-header">
+            <div>
+              <h2 className="card-title" id="pending-leaves-title">
+                Ожидают согласования
+              </h2>
+              <p className="card-subtitle" aria-live="polite">
+                {pendingLeaves.length} заявок
+              </p>
+            </div>
+          </header>
+          <ul className="list approval-list">
             {pendingLeaves.map((leave) => {
               const employee = getEmployee(leave.employeeId);
               if (!employee) return null;
               const typeMeta = LEAVE_TYPE_META[leave.type] ?? LEAVE_TYPE_META.vacation;
+              const priorityMeta = LEAVE_PRIORITY_META[leave.priority ?? 'normal'];
               const daysCount = countCalendarDays(leave.startDate, leave.endDate);
               const balance = getVacationBalance(employee);
               const overlaps = findDepartmentOverlaps(
@@ -96,75 +135,77 @@ export function Leaves() {
                 leave.endDate,
                 leave.id,
               );
-              const conflictText =
-                overlaps.length > 0 ? (
-                  <div className="inline-warning">
-                    Пересечение в отделе:{' '}
-                    {overlaps
-                      .map((item) => getEmployee(item.employeeId)?.name)
-                      .filter(Boolean)
-                      .join(', ')}
-                  </div>
-                ) : (
-                  <div className="inline-ok">
-                    Пересечений в отделе нет
-                    {leave.comment ? ` · ${leave.comment}` : ''}
-                  </div>
-                );
-
               return (
-                <div className="list-row" key={leave.id}>
-                  <div
-                    className="person-cell"
-                    style={{ cursor: 'pointer' }}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openDrawer(employee.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openDrawer(employee.id);
-                      }
-                    }}
-                  >
-                    <Avatar employee={employee} />
-                    <div className="person-meta">
-                      <div className="person-name">
-                        {employee.name}{' '}
-                        <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
-                          · {typeMeta.short}, {formatDateRange(leave.startDate, leave.endDate)} (
-                          {daysCount} дн., остаток {balance.remaining} дн.)
+                <li key={leave.id}>
+                  <article className="approval-card">
+                    <header className="approval-header">
+                      <span className="person-cell">
+                        <Avatar employee={employee} />
+                        <span className="person-meta">
+                          <span className="person-name">{employee.name}</span>
+                          <span className="person-sub">{employee.role}</span>
                         </span>
-                      </div>
-                      {conflictText}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button
-                      className="btn btn-sm btn-primary"
-                      type="button"
-                      onClick={() => decideLeave(leave.id, 'approved')}
-                    >
-                      Одобрить
-                    </button>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      type="button"
-                      onClick={() => decideLeave(leave.id, 'rejected')}
-                    >
-                      Отклонить
-                    </button>
-                  </div>
-                </div>
+                      </span>
+                      <PriorityBadge
+                        className={priorityMeta.className}
+                        icon={priorityMeta.icon}
+                        label={priorityMeta.label}
+                      />
+                    </header>
+                    <p className="approval-meta">
+                      {typeMeta.short} ·{' '}
+                      <time dateTime={leave.startDate}>
+                        {formatDateRange(leave.startDate, leave.endDate)}
+                      </time>{' '}
+                      · {daysCount} {pluralize(daysCount, ['день', 'дня', 'дней'])} · остаток{' '}
+                      {balance.remaining} дн.
+                    </p>
+                    {leave.comment ? <p className="approval-comment">{leave.comment}</p> : null}
+                    {overlaps.length > 0 ? (
+                      <p className="inline-warning">
+                        Пересечение в отделе:{' '}
+                        {overlaps
+                          .map((item) => getEmployee(item.employeeId)?.name)
+                          .filter(Boolean)
+                          .join(', ')}
+                      </p>
+                    ) : (
+                      <p className="inline-ok">Пересечений в отделе нет</p>
+                    )}
+                    <footer className="approval-actions">
+                      <button
+                        className="btn btn-sm btn-primary"
+                        type="button"
+                        onClick={() => decideLeave(leave.id, 'approved')}
+                      >
+                        Одобрить
+                      </button>
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        type="button"
+                        onClick={() => decideLeave(leave.id, 'rejected')}
+                      >
+                        Отклонить
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        type="button"
+                        onClick={() => openDrawer(employee.id)}
+                      >
+                        Профиль
+                      </button>
+                    </footer>
+                  </article>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
-      )}
+      ) : null}
 
-      <section className="card" style={{ marginBottom: 18 }}>
-        <div className="card-header" style={{ flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <section className="card" aria-labelledby="timeline-title">
+        <header className="card-header card-header-wrap">
+          <div className="timeline-controls">
             <button
               className="icon-btn"
               type="button"
@@ -173,7 +214,7 @@ export function Leaves() {
             >
               <IconChevronLeft />
             </button>
-            <h2 className="card-title" style={{ minWidth: 130, textAlign: 'center' }}>
+            <h2 className="card-title timeline-title" id="timeline-title">
               {MONTHS_NOM_RU[month]} {year}
             </h2>
             <button
@@ -184,237 +225,258 @@ export function Leaves() {
             >
               <IconChevronRight />
             </button>
-            <select
-              className="select"
-              style={{ height: 28, fontSize: 12 }}
-              value={ui.leaveDeptFilter}
-              onChange={(event) => patchUi({ leaveDeptFilter: event.target.value })}
-            >
-              <option value="all">Все отделы</option>
-              {data.departments.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-            </select>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div className="timeline-legend">
-              <span>
-                <span className="legend-dot" style={{ background: '#BFDBFE' }} />
+          <div className="timeline-tools">
+            <CustomSelect
+              id="leaveDeptFilter"
+              label="Отдел"
+              value={ui.leaveDeptFilter}
+              options={[
+                { value: 'all', label: 'Все отделы' },
+                ...data.departments.map((department) => ({
+                  value: department.id,
+                  label: department.name,
+                })),
+              ]}
+              onChange={(value) => patchUi({ leaveDeptFilter: value })}
+            />
+            <ul className="timeline-legend" aria-label="Легенда графика">
+              <li>
+                <span className="legend-dot legend-vacation" aria-hidden="true" />
                 Отпуск
-              </span>
-              <span>
-                <span className="legend-dot" style={{ background: '#DDD6FE' }} />
+              </li>
+              <li>
+                <span className="legend-dot legend-dayoff" aria-hidden="true" />
                 Отгул
-              </span>
-              <span>
-                <span className="legend-dot" style={{ background: '#FECACA' }} />
+              </li>
+              <li>
+                <span className="legend-dot legend-sick" aria-hidden="true" />
                 Больничный
-              </span>
-            </div>
+              </li>
+            </ul>
             <button
               className="btn btn-sm btn-secondary"
               type="button"
-              onClick={() =>
-                patchUi({ leaveShowAllTimeline: !ui.leaveShowAllTimeline })
-              }
+              onClick={() => patchUi({ leaveShowAllTimeline: !ui.leaveShowAllTimeline })}
             >
               {ui.leaveShowAllTimeline ? 'Только с отпусками' : 'Показать всех'}
             </button>
           </div>
-        </div>
-        <div className="timeline-wrap">
-          <table className="timeline-table">
-            <thead>
-              <tr>
-                <th>Сотрудник</th>
-                {days.map((day) => (
-                  <th
-                    className={`timeline-day-th${day.isWeekend ? ' weekend' : ''}${day.isToday ? ' today' : ''}`}
-                    key={day.iso}
-                  >
-                    {day.day}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {timelineEmployees.length === 0 ? (
+        </header>
+        <figure className="timeline-figure">
+          <div className="table-wrap timeline-wrap">
+            <table className="timeline-table">
+              <caption>
+                График отсутствий на {MONTHS_NOM_RU[month].toLowerCase()} {year}: сотрудники и дни
+                месяца
+              </caption>
+              <thead>
                 <tr>
-                  <td
-                    colSpan={daysInMonth + 1}
-                    style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}
-                  >
-                    Отсутствий в этом месяце нет
-                  </td>
+                  <th scope="col">Сотрудник</th>
+                  {days.map((day) => (
+                    <th
+                      scope="col"
+                      className={`timeline-day-th${day.isWeekend ? ' weekend' : ''}${day.isToday ? ' today' : ''}`}
+                      key={day.iso}
+                    >
+                      <time dateTime={day.iso}>{day.day}</time>
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                timelineEmployees.map((employee) => {
-                  const employeeLeaves = monthLeaves.filter(
-                    (leave) => leave.employeeId === employee.id,
-                  );
-                  return (
-                    <tr key={employee.id}>
-                      <td>
-                        <div
-                          className="person-cell"
-                          style={{ cursor: 'pointer' }}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openDrawer(employee.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              openDrawer(employee.id);
-                            }
-                          }}
-                        >
-                          <Avatar employee={employee} size="sm" />
-                          <div className="person-meta">
-                            <div className="person-name">{employee.name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      {days.map((day) => {
-                        const match = employeeLeaves.find(
-                          (leave) => leave.startDate <= day.iso && leave.endDate >= day.iso,
-                        );
-                        return (
-                          <td
-                            className={`timeline-cell${day.isWeekend ? ' weekend' : ''}${day.isToday ? ' today' : ''}`}
-                            key={day.iso}
+              </thead>
+              <tbody>
+                {timelineEmployees.length === 0 ? (
+                  <tr>
+                    <td className="table-empty" colSpan={daysInMonth + 1}>
+                      Отсутствий в этом месяце нет
+                    </td>
+                  </tr>
+                ) : (
+                  timelineEmployees.map((employee) => {
+                    const employeeLeaves = monthLeaves.filter(
+                      (leave) => leave.employeeId === employee.id,
+                    );
+                    return (
+                      <tr key={employee.id}>
+                        <th scope="row" className="timeline-person">
+                          <button
+                            className="person-cell person-button"
+                            type="button"
+                            onClick={() => openDrawer(employee.id)}
                           >
-                            {match && (
-                              <span
-                                className={`timeline-bar ${match.type}${match.status === 'pending' ? ' pending' : ''}`}
-                                title={`${employee.name}: ${(LEAVE_TYPE_META[match.type] ?? LEAVE_TYPE_META.vacation).short} (${formatDateRange(match.startDate, match.endDate)}) — ${(LEAVE_STATUS_META[match.status] ?? LEAVE_STATUS_META.approved).label}`}
-                              />
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                            <Avatar employee={employee} size="sm" />
+                            <span className="person-meta">
+                              <span className="person-name">{employee.name}</span>
+                            </span>
+                          </button>
+                        </th>
+                        {days.map((day) => {
+                          const match = employeeLeaves.find(
+                            (leave) => leave.startDate <= day.iso && leave.endDate >= day.iso,
+                          );
+                          return (
+                            <td
+                              className={`timeline-cell${day.isWeekend ? ' weekend' : ''}${day.isToday ? ' today' : ''}`}
+                              key={day.iso}
+                            >
+                              {match ? (
+                                <span
+                                  className={`timeline-bar ${match.type}${match.status === 'pending' ? ' pending' : ''}`}
+                                  title={`${employee.name}: ${(LEAVE_TYPE_META[match.type] ?? LEAVE_TYPE_META.vacation).short} (${formatDateRange(match.startDate, match.endDate)}) — ${(LEAVE_STATUS_META[match.status] ?? LEAVE_STATUS_META.approved).label}`}
+                                />
+                              ) : null}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          <figcaption>
+            Цветные полосы показывают отсутствия; полупрозрачные — заявки на согласовании.
+          </figcaption>
+        </figure>
       </section>
 
-      <section className="card">
-        <div className="card-header" style={{ flexWrap: 'wrap' }}>
-          <h2 className="card-title">Все заявки</h2>
-          <div className="segmented">
-            {(
-              [
-                ['all', 'Все'],
-                ['pending', 'Ожидают'],
-                ['approved', 'Одобрены'],
-                ['rejected', 'Отклонены'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                className={`segmented-btn${ui.leaveStatusFilter === value ? ' active' : ''}`}
-                key={value}
-                type="button"
-                onClick={() => setStatusFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
+      <section className="card" aria-labelledby="all-requests-title">
+        <header className="card-header card-header-wrap">
+          <div>
+            <h2 className="card-title" id="all-requests-title">
+              Все заявки
+            </h2>
+            <p className="card-subtitle">Найдено: {filteredRequests.length}</p>
           </div>
-        </div>
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Сотрудник</th>
-                <th>Тип</th>
-                <th>Период</th>
-                <th>Длительность</th>
-                <th>Статус</th>
-                <th>Комментарий</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}
-                  >
-                    Заявок нет
-                  </td>
-                </tr>
-              ) : (
-                filteredRequests.map((leave) => {
-                  const employee = getEmployee(leave.employeeId);
-                  if (!employee) return null;
-                  const typeMeta = LEAVE_TYPE_META[leave.type] ?? LEAVE_TYPE_META.vacation;
-                  const statusMeta =
-                    LEAVE_STATUS_META[leave.status] ?? LEAVE_STATUS_META.pending;
-                  const daysCount = countCalendarDays(leave.startDate, leave.endDate);
-                  return (
-                    <tr key={leave.id}>
-                      <td>
-                        <div
-                          className="person-cell"
-                          style={{ cursor: 'pointer' }}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openDrawer(employee.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              openDrawer(employee.id);
-                            }
-                          }}
-                        >
-                          <Avatar employee={employee} size="sm" />
-                          <div className="person-meta">
-                            <div className="person-name">{employee.name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{typeMeta.label}</td>
-                      <td className="tabular">
-                        {formatDateRange(leave.startDate, leave.endDate)}
-                      </td>
-                      <td className="tabular">{daysCount} дн.</td>
-                      <td>
-                        <StatusText
-                          statusClass={statusMeta.statusClass}
-                          label={statusMeta.label}
-                        />
-                      </td>
-                      <td
-                        style={{
-                          color: 'var(--text-secondary)',
-                          maxWidth: 250,
-                        }}
-                      >
-                        {leave.comment || '—'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          type="button"
-                          onClick={() => deleteLeave(leave.id)}
-                        >
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+          <RadioGroup
+            legend="Статус заявки"
+            options={[
+              { value: 'all', label: 'Все' },
+              { value: 'pending', label: 'Ожидают' },
+              { value: 'approved', label: 'Одобрены' },
+              { value: 'rejected', label: 'Отклонены' },
+            ]}
+            value={ui.leaveStatusFilter}
+            onChange={setStatusFilter}
+          />
+        </header>
+        {filteredRequests.length === 0 ? (
+          <EmptyState
+            title="Заявок нет"
+            text="Измените фильтр статуса или создайте новую заявку."
+          />
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table className="data-table leaves-table">
+                <caption>
+                  Заявки на отсутствие — страница {page} из {totalPages}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Сотрудник</th>
+                    <th scope="col">Тип</th>
+                    <th scope="col">Период</th>
+                    <th scope="col">Длительность</th>
+                    <th scope="col">Статус</th>
+                    <th scope="col">Приоритет</th>
+                    <th scope="col">Комментарий</th>
+                    <th scope="col">
+                      <span className="visually-hidden">Действия</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageItems.map((leave) => {
+                    const employee = getEmployee(leave.employeeId);
+                    if (!employee) return null;
+                    const typeMeta = LEAVE_TYPE_META[leave.type] ?? LEAVE_TYPE_META.vacation;
+                    const statusMeta =
+                      LEAVE_STATUS_META[leave.status] ?? LEAVE_STATUS_META.pending;
+                    const priorityMeta = LEAVE_PRIORITY_META[leave.priority ?? 'normal'];
+                    const daysCount = countCalendarDays(leave.startDate, leave.endDate);
+                    return (
+                      <tr key={leave.id}>
+                        <th scope="row" data-label="Сотрудник">
+                          <button
+                            className="person-cell person-button"
+                            type="button"
+                            onClick={() => openDrawer(employee.id)}
+                          >
+                            <Avatar employee={employee} size="sm" />
+                            <span className="person-meta">
+                              <span className="person-name">{employee.name}</span>
+                            </span>
+                          </button>
+                        </th>
+                        <td data-label="Тип">{typeMeta.label}</td>
+                        <td data-label="Период" className="tabular">
+                          <time dateTime={leave.startDate}>
+                            {formatDateRange(leave.startDate, leave.endDate)}
+                          </time>
+                        </td>
+                        <td data-label="Длительность" className="tabular">
+                          {daysCount} дн.
+                        </td>
+                        <td data-label="Статус">
+                          <StatusBadge
+                            statusClass={statusMeta.statusClass}
+                            label={statusMeta.label}
+                          />
+                        </td>
+                        <td data-label="Приоритет">
+                          <PriorityBadge
+                            className={priorityMeta.className}
+                            icon={priorityMeta.icon}
+                            label={priorityMeta.label}
+                          />
+                        </td>
+                        <td data-label="Комментарий" className="comment-cell">
+                          {leave.comment || '—'}
+                        </td>
+                        <td data-label="Действия" className="actions-cell">
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            type="button"
+                            onClick={() => deleteLeave(leave.id)}
+                            aria-label={`Удалить заявку ${employee.name}`}
+                          >
+                            Удалить
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <nav className="pagination" aria-label="Страницы заявок">
+              <button
+                className="pagination-btn"
+                type="button"
+                onClick={() => setPage(page - 1)}
+                disabled={page <= 1}
+                aria-label="Предыдущая страница"
+              >
+                ← <span className="pagination-text">Назад</span>
+              </button>
+              <p className="pagination-status" aria-live="polite">
+                Страница {page} из {totalPages}
+              </p>
+              <button
+                className="pagination-btn"
+                type="button"
+                onClick={() => setPage(page + 1)}
+                disabled={page >= totalPages}
+                aria-label="Следующая страница"
+              >
+                <span className="pagination-text">Вперёд</span> →
+              </button>
+            </nav>
+          </>
+        )}
       </section>
-    </>
+    </div>
   );
 }

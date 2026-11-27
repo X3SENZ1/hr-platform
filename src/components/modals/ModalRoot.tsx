@@ -6,20 +6,21 @@ import { CommandPalette } from './CommandPalette';
 
 export function ModalRoot() {
   const { ui, closeModal } = useHr();
+  const active = Boolean(ui.activeModal);
 
   return (
     <div
       id="modalBackdrop"
-      className={`modal-backdrop${ui.activeModal ? ' open' : ''}`}
-      aria-hidden={!ui.activeModal}
+      className={`modal-backdrop${active ? ' open' : ''}`}
+      aria-hidden={!active}
       onClick={(event) => {
         if (event.target === event.currentTarget) closeModal();
       }}
     >
-      {ui.activeModal === 'command' && <CommandPalette />}
-      {ui.activeModal === 'addEmployee' && <AddEmployeeModal />}
-      {ui.activeModal === 'addLeave' && <AddLeaveModal />}
-      {ui.activeModal === 'addOnboarding' && <AddOnboardingModal />}
+      {ui.activeModal === 'command' ? <CommandPalette /> : null}
+      {ui.activeModal === 'addEmployee' ? <AddEmployeeModal /> : null}
+      {ui.activeModal === 'addLeave' ? <AddLeaveModal /> : null}
+      {ui.activeModal === 'addOnboarding' ? <AddOnboardingModal /> : null}
     </div>
   );
 }
@@ -27,11 +28,14 @@ export function ModalRoot() {
 export function ToastContainer() {
   const { toasts } = useHr();
   return (
-    <div id="toastContainer" className="toast-container" aria-live="polite">
+    <div id="toastContainer" className="toast-container" aria-live="polite" aria-atomic="false">
       {toasts.map((toast) => (
-        <div className="toast" key={toast.id}>
+        <p className="toast" key={toast.id} role="status">
+          <span className="toast-icon" aria-hidden="true">
+            ✓
+          </span>
           {toast.message}
-        </div>
+        </p>
       ))}
     </div>
   );
